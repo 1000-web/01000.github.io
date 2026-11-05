@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<meta charset="utf-8">
 <title>晶獸紀元</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -393,6 +393,8 @@ body.pc .screen{border-bottom:0}
 
 <script>
 (()=>{
+/* 防止網頁把遊戲程式載入兩次：兩份程式會搶同一個畫面，造成人物造型一直閃換 */
+if(window.__CBE_RUNNING)return;window.__CBE_RUNNING=true;
 const $=s=>document.querySelector(s);
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const cv=$('#cv');let ctx=cv.getContext('2d');ctx.imageSmoothingEnabled=false;
@@ -1956,7 +1958,6 @@ function rideOn(){return !!(G&&G.flags&&G.flags.ride&&G.beasts&&G.beasts.length&
 function mountBeast(){if(!G||!G.beasts)return null;if(SURF!=null&&G.beasts[SURF])return G.beasts[SURF];return rideOn()?G.beasts[0]:null}
 const MIMG={};function mountImg(b){const u=dexURL(curForm(b));let im=MIMG[u];if(!im){im=new Image();im.src=u;MIMG[u]=im}return im}
 const mntC=document.createElement('canvas');mntC.width=40;mntC.height=46;const mntG=mntC.getContext('2d');
-const mntO=document.createElement('canvas');mntO.width=40;mntO.height=46;const mntOG=mntO.getContext('2d');
 function drawMounted(a,t,b){
   const X=Math.round(a.px),Y=Math.round(a.py)-2,sea=SURF!=null;
   if(a.dir==='left'||a.dir==='right')a.lastH=a.dir;const face=a.lastH||'left';
@@ -1967,19 +1968,22 @@ function drawMounted(a,t,b){
   try{const sd=a.dir,fr=a.frame;a.dir=face;a.frame=0;drawPerson(a,12,19+bob);a.dir=sd;a.frame=fr;
     const im=mountImg(b);if(im.complete&&im.naturalWidth){mntG.imageSmoothingEnabled=false;mntG.save();if(face==='right'){mntG.translate(40,0);mntG.scale(-1,1)}mntG.drawImage(im,2,10+bob,36,36);mntG.restore()}
   }finally{ctx=main}
-  outlinePass(mntG,mntOG,40,46,'#08060e');
+  const mo=outPool(40,46);outlinePass(mntG,mo.g,40,46,'#08060e');const mntO=mo.c;
   if(sea){ctx.drawImage(mntO,0,0,40,40,X-12,Y-24,40,40);
     ctx.globalAlpha=.85;for(let i=0;i<6;i++){const xx=X-6+i*5+((t*6|0)%2);px(xx,Y+15,3,1,'#ffffff')}ctx.globalAlpha=1}
   else ctx.drawImage(mntO,X-12,Y-28);
 }
+/* 每個角色用自己的畫布：有些瀏覽器會延後執行 drawImage，共用同一張畫布會讓所有角色都畫成最後一個人的樣子 */
+const OUTP=[];let outPi=0;
+function outPool(w,h){let o=OUTP[outPi];if(!o){const c=document.createElement('canvas');o=OUTP[outPi]={c,g:c.getContext('2d')}}outPi++;if(o.c.width!==w||o.c.height!==h){o.c.width=w;o.c.height=h}return o}
 function drawActor(a,t){
   if(a===player&&mode!=='title'){const mb=mountBeast();if(mb)return drawMounted(a,t,mb)}
   const X=Math.round(a.px),Y=Math.round(a.py)-2;
   ctx.globalAlpha=.25;px(X+3,Y+15,10,2,'#204020');ctx.globalAlpha=1;
   const main=ctx;ctx=actG;actG.clearRect(0,0,24,26);
   try{if(a.kind==='person')drawPerson(a,4,5);else if(a.kind==='bot')drawBot(a,4,5,t);else if(a.kind==='cargo')drawCargo(a,4,5,t);else drawBeast(a,4,5,t)}finally{ctx=main}
-  outlinePass(actG,outG,24,26,'#08060e');
-  ctx.drawImage(outC,X-4,Y-5);
+  const oc=outPool(24,26);outlinePass(actG,oc.g,24,26,'#08060e');
+  ctx.drawImage(oc.c,X-4,Y-5);
 }
 function drawCargo(a,X,Y,t){
   const f=a.dir==='left',R=(x,y,w,h,c)=>px(X+(f?16-x-w:x),Y+y,w,h,c),st=a.frame?1:0;
@@ -2354,7 +2358,7 @@ function render(t){
   if(MAP.lm)drawLandmark(t);
   drawDrops(t);
   ctx=MC;inkLayer(W,H);ctx.drawImage(olC,camX,camY);
-  const list=MAP.actors.filter(a=>!a.hidden);if(!player.asleep)list.push(player);
+  outPi=0;const list=MAP.actors.filter(a=>!a.hidden);if(!player.asleep)list.push(player);
   list.sort((a,b)=>a.py-b.py).forEach(a=>{drawActor(a,t);if((MAP.id==='town'||MAP.theme==='forest')&&!a.moving&&tileAt(MAP,a.x,a.y)==='G')tallGrassFront(a.x*TS,a.y*TS,t,a.x,a.y)});
   drawNav(t);
   if(MAP.id==='home'&&player.asleep)drawSleeper(t);
@@ -4525,5 +4529,3 @@ var loadDone=false;
 })();
 })();
 </script>
-
-</body></html>
