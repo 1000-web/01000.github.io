@@ -127,6 +127,7 @@ canvas#cv{display:block;width:100%;height:100%;object-fit:fill;image-rendering:p
 .dexcell .no{position:absolute;left:1px;top:0;font-size:.55em;color:var(--muted)}
 .dexcell.on{border:2px solid var(--pink)!important}
 .dexcell.unseen img{filter:brightness(.35) saturate(.3)}
+.dexcell.hid img{filter:brightness(0) opacity(.6)}
 .battle{position:absolute;inset:0;font-size:clamp(10px,3.3cqw,15px);line-height:1.4}
 .bhud{position:absolute;background:rgba(10,14,32,.88);border:2px solid var(--edge);padding:.3em .6em;display:flex;flex-direction:column;gap:.35em;min-width:0}
 .bhud.enemy{left:2%;top:3%;width:min(45%,15em);box-sizing:border-box}
@@ -222,7 +223,10 @@ body.pc .screen{border-bottom:0}
 .selbtn{font-size:1.5cqh!important;letter-spacing:.15em;padding:.5cqh 2cqh;border-radius:999px;align-self:flex-end;margin-bottom:3cqh}
 .ab{display:grid;grid-template-columns:auto auto;grid-template-rows:1fr auto;column-gap:2.2cqh;align-self:stretch;align-items:center;justify-items:center}
 .autobtn{grid-column:1/3;align-self:end;font-size:1.5cqh!important;letter-spacing:.15em;padding:.5cqh 2cqh;border-radius:999px;margin-bottom:3cqh}
+.dpad .ridebtn{grid-area:2/2;border-radius:50%!important;font-size:2cqh!important;padding:0!important;width:5.2cqh;height:5.2cqh;justify-self:center;align-self:center;background:#3a2a1a!important;color:#ffd166!important;border-color:#ffd166!important}
+.dpad .ridebtn.on{background:#ffd166!important;color:#1a0b18!important}
 .autobtn.on{background:#ffd166!important;color:#1a0b18!important;border-color:#ffd166!important}
+.autotag.boosttag{right:auto;left:6px;background:#ff5fa2;color:#fff}
 .autotag{position:absolute;right:6px;bottom:6px;z-index:6;background:#ffd166;color:#1a0b18;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px;letter-spacing:.1em;pointer-events:none}
 .round{width:8cqh;height:8cqh;border-radius:50%;font-size:2.8cqh!important}
 .abtn{background:var(--pink)!important;color:#1a0b18!important;border-color:#0b0e1a!important;box-shadow:0 0 0 2px var(--pink);transform:translateY(-2.5cqh)}
@@ -373,6 +377,7 @@ body.pc .screen{border-bottom:0}
       <div class="dpad">
         <button data-d="up" aria-label="上">▲</button><button data-d="left" aria-label="左">◀</button>
         <button data-d="right" aria-label="右">▶</button><button data-d="down" aria-label="下">▼</button>
+        <button class="ridebtn" id="rideBtn" aria-label="騎乘" hidden>騎</button>
       </div>
       <button class="selbtn" id="selBtn" aria-label="SELECT 選單">SELECT</button>
       <div class="ab">
@@ -383,7 +388,7 @@ body.pc .screen{border-bottom:0}
   </div>
 </div>
 <div class="keys">
-  <kbd>↑↓←→</kbd>／<kbd>WASD</kbd> 移動　<kbd>Z</kbd> 確認　<kbd>X</kbd> 取消　<kbd>Enter</kbd> 選單　<kbd>Q</kbd> 自動打怪
+  <kbd>↑↓←→</kbd>／<kbd>WASD</kbd> 移動　<kbd>Z</kbd> 確認　<kbd>X</kbd> 取消　<kbd>Enter</kbd> 選單　<kbd>E</kbd> 自動打怪　<kbd>Q</kbd> 騎乘
 </div>
 
 <script>
@@ -409,6 +414,17 @@ const ITEMS={
   cape:{name:'星紋披風',slot:'cape',icon:'cape',pal:['#7b6cf6','#ffd166','#c9a7ff'],stats:{psy:1,mp:20},desc:'媽媽親手縫的生日禮物，星紋會微微發光。'},
   potion:{name:'回復膠囊',type:'use',icon:'potion',pal:['#ff5fa2','#ffc2dc','#e9ecff'],desc:'回復人類或幻獸 200 點 HP。',stack:true,price:80},
   battery:{name:'晶能電池',type:'use',icon:'battery',pal:['#262d52','#5ff3ff','#ffd166'],desc:'回復人類或幻獸 100 點 MP。',stack:true,price:100},
+  herb:{name:'綠葉草藥',type:'use',icon:'potion',pal:['#48a058','#c4f1c0','#e9ecff'],desc:'回復人類或幻獸 100 點 HP。便宜又好用。',stack:true,price:40},
+  potion2:{name:'高級回復膠囊',type:'use',icon:'potion',pal:['#ff4d6d','#ffd166','#e9ecff'],desc:'回復人類或幻獸 500 點 HP。',stack:true,price:260},
+  potion3:{name:'全效回復膠囊',type:'use',icon:'potion',pal:['#ffd166','#fff3c4','#e9ecff'],desc:'人類或幻獸的 HP 全部回復。',stack:true,price:700},
+  battery2:{name:'高能晶能電池',type:'use',icon:'battery',pal:['#3b2b6c','#c9a7ff','#ffd166'],desc:'回復人類或幻獸 250 點 MP。',stack:true,price:300},
+  spray:{name:'群體回復噴霧',type:'use',icon:'potion',pal:['#5ff3ff','#c4f1ff','#e9ecff'],desc:'戰鬥中我方全員（主角和幻獸）各回復 300 點 HP。',stack:true,price:480},
+  elixir:{name:'萬能晶露',type:'use',icon:'potion',pal:['#c9a7ff','#ff8fc0','#ffffff'],desc:'人類或幻獸的 HP、MP 全部回復。非常稀有的藥。',stack:true,price:1500},
+  saddle:{name:'乘騎鞍',type:'tool',noSell:1,icon:'card',pal:['#8a5a32','#ffd166','#3b2b1e'],desc:'風車鎮騎士送的鞍具。使用後騎上隊伍第一隻幻獸，移動速度提高 300%。再用一次就下來。（也可以按 Q 鍵或方向鍵中間的「騎」按鈕）'},
+  expcard2:{name:'雙倍經驗卡',type:'use',icon:'card',pal:['#ffd166','#3a86ff','#ffffff'],desc:'使用後 2 小時內（遊戲時間），主角和幻獸戰鬥獲得的經驗值變成 2 倍。向遊戲設計者索取兌換碼取得。',stack:true,noSell:1},
+  expcard100:{name:'百倍經驗卡',type:'use',icon:'card',pal:['#ff5fa2','#fff04a','#ffffff'],desc:'使用後 1 小時內（遊戲時間），主角和幻獸戰鬥獲得的經驗值變成 100 倍！向遊戲設計者索取兌換碼取得。',stack:true,noSell:1},
+  resetcard:{name:'點數重置卡',type:'use',icon:'card',pal:['#7ee08a','#262a4f','#ffffff'],desc:'把主角已經分配的升級點數全部退回，可以重新分配。向遊戲設計者索取兌換碼取得。',stack:true,noSell:1},
+  conch:{name:'海之貝笛',type:'key',icon:'shell',pal:['#5ff3ff','#c4f1ff'],desc:'海洋之子送的貝殼笛。面向大海按 A，就能乘著水屬性的夥伴在海上前進。'},
   cake:{name:'生日蛋糕',type:'use',icon:'cake',pal:['#f4f6fb','#ff8fb8','#ff4d6d'],desc:'媽媽做的草莓蛋糕。吃了心情會變好。',stack:true},
   net:{name:'初級捕獸網',type:'use',icon:'net',pal:['#e9ecff','#8a5a32','#ffd166'],desc:'在戰鬥中對野生幻獸使用。對手的 HP 越低越容易捕捉。',stack:true,price:100},
   tent:{name:'原地帳篷',type:'tool',noSell:1,icon:'cake',pal:['#48a058','#ffd166','#2f6a3a'],desc:'在原地搭帳篷休息，主角和隊伍幻獸完全回復。不會因為使用而消耗，可以重複使用。AUTO 掛機時可以自動使用。寫信給遊戲設計者索取，或寄上你對遊戲的想法、建議，都能收到兌換碼，在角色欄兌換取得。',stack:true},
@@ -491,6 +507,31 @@ const GEAR_DEF=[
 ];
 GEAR_DEF.forEach(([id,name,slot,icon,pal,stats,price,tier,desc])=>{ITEMS[id]={name,slot,icon,pal,stats,desc,tier};if(price)ITEMS[id].price=price});
 const GEAR_SHOP=GEAR_DEF.filter(g=>g[6]>0);
+/* 各城鎮特色裝備（只在該城鎮的裝備鋪販售） */
+const TOWN_GEAR_DEF={
+ flower:[['t_fl_hat','晶花花冠','hat','hat',['#ff8fc0','#ffd166','#7ee08a'],{psy:4,mp:40,luk:1},1300,2,'用花語鎮的晶花編成的花冠，戴著會有淡淡花香。'],['t_fl_top','花瓣洋裝','top','shirt',['#ff8fc0','#fff3c4','#c070a0'],{hp:200,psy:2},1500,2,'層層花瓣縫成的上衣，意外地很耐打。'],['t_fl_wpn','荊棘藤鞭','weapon','sword',['#48a058','#8a5a32','#ff8fc0'],{ele:4,psy:2},1600,2,'會自己纏住對手的藤鞭。']],
+ windmill:[['t_wm_hat','牧場草帽','hat','hat',['#e8c070','#c06848','#8a5a32'],{hp:90,luk:3},1100,2,'牧場主人推薦的寬簷草帽。'],['t_wm_top','風車工作服','top','shirt',['#c06848','#e0a040','#5a3d2f'],{hp:240,mec:2},1500,2,'口袋裡塞滿了小扳手。'],['t_wm_shoes','風翼長靴','shoes','shoes',['#7ee08a','#ffffff'],{luk:5,ele:1},1700,2,'靴跟有小小的風車葉片。']],
+ mistvale:[['t_mv_hat','燈靈面紗','hat','hat',['#c9d3ff','#6a7a9a','#ffd166'],{psy:5,mp:50},1600,2,'薄紗上縫著會發光的燈靈絲。'],['t_mv_cape','霧行斗篷','cape','cape',['#6a7a9a','#c9d3ff','#3b4470'],{psy:4,luk:2,mp:40},1800,2,'穿上後身影會在霧中若隱若現。'],['t_mv_wpn','提燈法杖','weapon','sword',['#ffd166','#5a3d2f','#c9d3ff'],{psy:6,mp:40},2000,2,'杖頭掛著一盞永不熄滅的燈。']],
+ crystal:[['t_cs_hat','晶片護目鏡','hat','hat',['#4878d8','#5ff3ff','#262a4f'],{mec:4,luk:2},1800,2,'能即時分析幻獸數據的護目鏡。'],['t_cs_top','晶塔制服','top','shirt',['#4878d8','#e9ecff','#262a4f'],{hp:280,mec:3},2200,2,'大晶塔研究員的制服，有防晶能輻射塗層。'],['t_cs_wpn','電漿槍刃','weapon','sword',['#5ff3ff','#3b4470','#ff5fa2'],{mec:6,ele:2},2600,2,'刀刃上流動著藍色電漿。']],
+ snow:[['t_sn_hat','毛絨雪帽','hat','hat',['#e9f4ff','#e04848','#a8b8d8'],{hp:140,psy:2},1600,2,'有兩顆毛球的保暖帽。'],['t_sn_top','雪原大衣','top','shirt',['#a8b8d8','#ffffff','#4878d8'],{hp:360,psy:1},2400,2,'內裡縫著霜鬃狐掉下的毛。'],['t_sn_shoes','冰爪長靴','shoes','shoes',['#e9f4ff','#6ff0ff'],{luk:5,hp:90},2100,2,'鞋底有冰爪，在雪地上也不會滑。']],
+ sand:[['t_sd_hat','衝浪頭巾','hat','hat',['#48a8c8','#f0a040','#ffffff'],{luk:4,ele:1},1500,2,'衝浪少年最愛的頭巾。'],['t_sd_pants','海風短褲','pants','pants',['#48a8c8','#f0a040'],{hp:200,luk:3},1800,2,'快乾布料，下水也沒問題。'],['t_sd_wpn','漁夫魚叉','weapon','sword',['#c4f1ff','#8a5a32','#48a8c8'],{ele:6,luk:2},2400,2,'老漁夫親手打造的魚叉。']],
+ coral:[['t_cr_hat','珊瑚頭冠','hat','hat',['#ff8fa0','#48c8c0','#f0c060'],{psy:5,luk:3,mp:60},3600,3,'用掉落的珊瑚枝做成，閃著虹光。'],['t_cr_cape','潮汐披風','cape','cape',['#48c8c0','#c4f1ff','#1d3f8f'],{psy:4,hp:120,mp:80},4000,3,'披風下擺像浪花一樣起伏。'],['t_cr_wpn','珊瑚長槍','weapon','sword',['#ff8fa0','#f0c060','#48c8c0'],{ele:7,psy:3},4400,3,'槍頭是一整塊紅珊瑚。']],
+ volcano:[['t_vo_hat','熔岩頭盔','hat','hat',['#c04830','#e08838','#6a5a58'],{hp:220,ele:3},3800,3,'用火山岩鍛造，能擋住熔岩噴濺。'],['t_vo_top','火山岩鎧','top','shirt',['#6a5a58','#e08838','#c04830'],{hp:500,ele:3},4800,3,'鍛造師的得意之作，重但非常堅固。'],['t_vo_wpn','熔核巨劍','weapon','sword',['#ff5a1f','#3b2b1e','#ffd166'],{ele:9,mec:2},5200,3,'劍身裡封著一顆還在發熱的熔核。']],
+ star:[['t_st_hat','星辰之冠','hat','hat',['#c9a7ff','#fff3c4','#7b6cf6'],{psy:6,luk:4,mp:90},4800,3,'冠上的寶石映著真正的星空。'],['t_st_cape','星雲披風','cape','cape',['#262a4f','#c9a7ff','#5ff3ff'],{psy:5,luk:5,mp:90},5000,3,'披風裡像裝著一整片星雲。'],['t_st_wpn','流星法杖','weapon','sword',['#fff3c4','#7b6cf6','#5ff3ff'],{psy:8,ele:3,mp:60},5600,3,'揮動時會拖出流星般的光尾。']]
+};
+const TOWN_GEAR={};for(const [tw,list] of Object.entries(TOWN_GEAR_DEF)){TOWN_GEAR[tw]=list.map(g=>g[0]);
+  list.forEach(([id,name,slot,icon,pal,stats,price,tier,desc])=>{ITEMS[id]={name,slot,icon,pal,stats,desc:desc+'（'+({flower:'花語鎮',windmill:'風車鎮',mistvale:'霧谷村',crystal:'晶塔市',snow:'雪原鎮',sand:'白沙鎮',coral:'珊瑚島',volcano:'火山島',star:'星辰島'})[tw]+'限定）',tier,price}})}
+/* 野外掉落裝備（商店買不到） */
+const DROP_GEAR_DEF=[
+ ['d_hat1','野狼皮帽','hat','hat',['#8a6c57','#c9b893','#5a3d2f'],{hp:70,luk:2},1,'用野狼脫落的毛皮縫成的帽子。'],['d_top1','藤甲背心','top','shirt',['#6b8f5a','#c9e070','#3b2b1e'],{hp:140,ele:1},1,'堅韌藤蔓編織的背心。'],['d_wpn1','獸骨短刀','weapon','sword',['#efe2c4','#5a3d2f','#c98a4b'],{ele:3,luk:1},1,'野生幻獸留下的骨頭磨成的短刀。'],['d_shoes1','羽毛便鞋','shoes','shoes',['#c9d3ff','#ff8fb8'],{luk:3,hp:30},1,'鞋面插著小風鴿掉下的羽毛。'],
+ ['d_hat2','霧紗頭巾','hat','hat',['#c9d3ff','#7b6cf6','#3b4470'],{psy:4,mp:40},2,'在霧裡撿到的頭巾，戴上後頭腦特別清楚。'],['d_cape2','鱗光披風','cape','cape',['#4fd6c0','#c4f1ff','#2b8f80'],{mp:50,psy:3},2,'縫滿了閃亮的鱗片。'],['d_pants2','岩殼護腿','pants','pants',['#8a8478','#c98a4b'],{hp:210,mec:2},2,'岩殼蜥的殼做成的護腿。'],['d_wpn2','雷爪拳刃','weapon','sword',['#ffe600','#3b4470','#ffffff'],{ele:5,mec:2},2,'雷蠍的爪子改造成的拳刃。'],
+ ['d_top3','龍鱗胸甲','top','shirt',['#c43a7a','#ffd166','#5a1030'],{hp:440,ele:3},3,'傳說龍鱗打造的胸甲。'],['d_wpn3','星隕之劍','weapon','sword',['#c9d3ff','#262a4f','#ffd166'],{ele:8,psy:2},3,'用墜落的星星打造的劍。'],['d_cape3','鳳羽披風','cape','cape',['#ff5a1f','#ffd166','#fff36a'],{psy:5,luk:4,mp:80},3,'每一根羽毛都像火焰在燃燒。'],['d_shoes3','深海之靴','shoes','shoes',['#1d3f8f','#5ff3ff'],{luk:6,hp:130},3,'在海底也能行走的靴子。'],
+ ['d_hat4','傳說之冠','hat','hat',['#fff04a','#ff5fa2','#ffffff'],{psy:7,luk:6,mp:120},4,'只有打倒隱藏幻獸才拿得到的王冠。'],['d_wpn4','晶神之刃','weapon','sword',['#5ff3ff','#7b6cf6','#fff04a'],{ele:10,mec:4,psy:4},4,'劍身裡流動著三種力量。'],['d_top4','幻獸王戰衣','top','shirt',['#7b6cf6','#fff04a','#262a4f'],{hp:600,ele:3,psy:3},4,'傳說中幻獸之王留下的戰衣。']];
+DROP_GEAR_DEF.forEach(([id,name,slot,icon,pal,stats,tier,desc])=>{ITEMS[id]={name,slot,icon,pal,stats,desc:desc+'（野外掉落）',tier:Math.min(3,tier),dropTier:tier,price:[0,700,1800,4000,8000][tier]}});
+function dropGear(foe){const d=DEX.find(x=>x.id===foe.key)||{r:1},hid=d.r>=4;
+  if(Math.random()>=(hid?.45:.05+d.r*.015))return null;
+  const t=hid?4:foe.lv<20?1:foe.lv<40?2:3,list=DROP_GEAR_DEF.filter(g=>g[6]===t||(!hid&&g[6]===t-1&&Math.random()<.3)),g=list[Math.random()*list.length|0];
+  return g&&addItem(g[0])?g[0]:null}
 const SLOTS=[['hat','帽子'],['top','衣服'],['cape','披風'],['weapon','武器'],['pants','褲子'],['shoes','鞋子']];
 const STATN={hp:'HP',mp:'MP',ele:'元素力',psy:'精神力',mec:'機械力',luk:'幸運力'},ATTRS=['ele','psy','mec','luk'];
 const SKILLS={
@@ -549,7 +590,7 @@ const profTxt=o=>Object.entries(o).map(([k,v])=>`${STATN[k]}+${v}`).join(' ');
 const BAG_MAX=50;
 /* 背包三層：0 消耗品・1 物品（不會因使用而消耗）・2 裝備 */
 const BAGN=['消耗品','物品','裝備'];
-function bagCat(id){const it=ITEMS[id];if(!it)return 0;if(it.slot)return 2;if(['key','quest','treasure','tool'].includes(it.type)||it.noSell)return 1;return 0}
+function bagCat(id){const it=ITEMS[id];if(!it)return 0;if(it.slot)return 2;if(['key','quest','treasure','tool'].includes(it.type)||(it.noSell&&it.type!=='use'))return 1;return 0}
 const bagCount=c=>G.bag.filter(x=>bagCat(x.id)===c).length;
 const bagFullFor=id=>{const it=ITEMS[id];if(it&&it.stack&&G.bag.some(x=>x.id===id))return false;return bagCount(bagCat(id))>=BAG_MAX};
 /* ----- 40 種基礎幻獸 ----- sys: e=元素 p=精神 m=機械 ; 屬性只用在元素系 */
@@ -604,6 +645,8 @@ const DEX=[
 ];
 /* ===== 擴充：50 種基礎幻獸（森林・峽谷・濕地・遺跡）===== */
 DEX.push(...[{"id": "leafmouse", "name": "葉耳鼠", "sys": "e", "r": 1, "shape": "quad", "pal": ["#7ec850", "#4f9d3a", "#f8e070"], "f": ["ears", "tailbig"], "hab": "幻獸森林", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "葉刃", "desc": "耳朵是兩片嫩葉，風一吹就會轉向聲音的來源。", "el": "風"}, {"id": "mossbear", "name": "苔蘚熊", "sys": "e", "r": 2, "shape": "quad", "pal": ["#6b8f5a", "#4a6b3a", "#c9e070"], "f": ["ears", "mane"], "hab": "森林溪谷", "role": "守衛", "st": [84, 48, 54, 78, 36], "sk": "苔甲撞擊", "desc": "冬眠時背上會長出一整片苔蘚花園。", "el": "土"}, {"id": "woodowl", "name": "林梟", "sys": "p", "r": 1, "shape": "bird", "pal": ["#a07850", "#705030", "#f8d848"], "f": ["ears"], "hab": "夜晚的森林", "role": "偵查", "st": [41, 64, 37, 37, 51], "sk": "靜夜之眼", "desc": "能在黑暗中看見生物心情的顏色。"}, {"id": "flowerfawn", "name": "花冠鹿", "sys": "e", "r": 1, "shape": "quad", "pal": ["#f8e0c0", "#e0b080", "#ff8fb8"], "f": ["antler"], "hab": "森林花原", "role": "療癒", "st": [46, 46, 46, 46, 46], "sk": "花香治癒", "desc": "鹿角上開著花，季節不同，花色也不同。", "el": "光"}, {"id": "dryad", "name": "樹精靈", "sys": "p", "r": 2, "shape": "golem", "pal": ["#8fbf6a", "#6b4a3a", "#f8e070"], "f": ["mane"], "hab": "千年古木", "role": "輔助", "st": [54, 84, 48, 48, 66], "sk": "森之低語", "desc": "千年古木的樹靈化身，最喜歡聽人說故事。"}, {"id": "mushroom", "name": "蘑菇菇", "sys": "p", "r": 1, "shape": "blob", "pal": ["#e04848", "#f8f0e0", "#f8f8f8"], "f": [], "hab": "陰濕林地", "role": "輔助", "st": [64, 37, 41, 60, 28], "sk": "睡眠孢子", "desc": "傘蓋一抖，就會灑出讓人想睡覺的孢子。"}, {"id": "jadebird", "name": "翠羽鳥", "sys": "e", "r": 1, "shape": "bird", "pal": ["#48c890", "#2f8a60", "#f8d848"], "f": [], "hab": "森林樹冠", "role": "通訊", "st": [41, 41, 46, 32, 69], "sk": "翠風", "desc": "羽毛像翡翠一樣，傳說看到牠會帶來好運。", "el": "風"}, {"id": "vinesnake", "name": "藤蔓蛇", "sys": "e", "r": 1, "shape": "serpent", "pal": ["#5aa848", "#3a7830", "#f8e070"], "f": [], "hab": "灌木叢", "role": "偵查", "st": [46, 37, 64, 41, 41], "sk": "纏繞", "desc": "能把自己偽裝成藤蔓，常讓採果的人嚇一跳。", "el": "土"}, {"id": "glowworm", "name": "螢光蟲", "sys": "e", "r": 1, "shape": "bug", "pal": ["#c8e870", "#88a848", "#f8f8a0"], "f": ["antenna"], "hab": "夜晚林道", "role": "照明", "st": [41, 64, 37, 37, 51], "sk": "螢光閃", "desc": "成群出現時，整條林道會像銀河一樣發光。", "el": "光"}, {"id": "forestwarden", "name": "森林守護獸", "sys": "ep", "r": 3, "shape": "quad", "pal": ["#5a8a4a", "#3a5a30", "#f8d848"], "f": ["antler", "mane", "crystal"], "hab": "森林最深處", "role": "守護", "st": [78, 78, 78, 78, 78], "sk": "森羅萬象", "desc": "幻獸森林的守護神，只在森林陷入危機時現身。", "el": "風"}, {"id": "chimebee", "name": "風鈴蜂", "sys": "e", "r": 1, "shape": "bug", "pal": ["#f8d848", "#3b2b1e", "#9fe7ff"], "f": ["wings"], "hab": "花叢", "role": "授粉", "st": [41, 41, 46, 32, 69], "sk": "鈴音振翅", "desc": "振翅聲像風鈴，森林裡的花聽到就會開。", "el": "風"}, {"id": "barkbeetle", "name": "樹皮甲蟲", "sys": "em", "r": 2, "shape": "bug", "pal": ["#8a6a4a", "#5a4030", "#9aa6c9"], "f": ["claw", "armor"], "hab": "枯木", "role": "工程", "st": [84, 48, 54, 78, 36], "sk": "甲殼鑽擊", "desc": "外殼像樹皮一樣粗糙，其實是天然的合金。", "el": "土"}, {"id": "rocklizard", "name": "岩殼蜥", "sys": "e", "r": 1, "shape": "quad", "pal": ["#b08860", "#806040", "#f8d848"], "f": ["spikes"], "hab": "峽谷岩壁", "role": "守衛", "st": [64, 37, 41, 60, 28], "sk": "岩石封鎖", "desc": "曬太陽時會和岩石融為一體，連鳥都看不出來。", "el": "土"}, {"id": "lavasnail", "name": "熔岩蝸", "sys": "e", "r": 1, "shape": "blob", "pal": ["#ff7a3d", "#5a3020", "#ffd166"], "f": ["flame"], "hab": "熔岩洞", "role": "加工", "st": [64, 37, 41, 60, 28], "sk": "熔岩黏液", "desc": "殼裡流著岩漿，走過的地方會留下發光的痕跡。", "el": "火"}, {"id": "thunderscorp", "name": "雷蠍", "sys": "e", "r": 2, "shape": "bug", "pal": ["#f8d848", "#3b2b1e", "#5ff3ff"], "f": ["claw", "stinger", "spark"], "hab": "峽谷裂縫", "role": "戰鬥", "st": [60, 48, 84, 54, 54], "sk": "雷霆螫刺", "desc": "尾針能放出強烈電流，礦工都很怕牠。", "el": "雷"}, {"id": "dunefox", "name": "沙丘狐", "sys": "e", "r": 1, "shape": "quad", "pal": ["#e8c890", "#c8a060", "#f8f8f8"], "f": ["ears", "tailbig"], "hab": "沙丘", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "沙塵捲", "desc": "大耳朵能聽見沙子底下獵物的心跳。", "el": "土"}, {"id": "oregolem", "name": "礦石魔像", "sys": "em", "r": 2, "shape": "golem", "pal": ["#8a8478", "#5a5248", "#5ff3ff"], "f": ["crystal", "armor"], "hab": "礦坑", "role": "工程", "st": [84, 48, 54, 78, 36], "sk": "礦石重拳", "desc": "身上嵌著各種礦石，礦工把牠當成會走路的礦脈。", "el": "土"}, {"id": "volcfinch", "name": "火山雀", "sys": "e", "r": 1, "shape": "bird", "pal": ["#ff6b4a", "#c43a2a", "#f8d848"], "f": ["flame"], "hab": "火山口", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "火星啄", "desc": "喜歡在溫泉旁築巢，羽毛摸起來暖暖的。", "el": "火"}, {"id": "steelwolf", "name": "鋼牙狼", "sys": "m", "r": 2, "shape": "quad", "pal": ["#9aa6c9", "#5a637d", "#ff4d6d"], "f": ["ears", "armor", "tailbig"], "hab": "廢棄礦場", "role": "戰鬥", "st": [60, 48, 84, 54, 54], "sk": "鋼牙撕咬", "desc": "機械改造狼群的後代，牙齒是超硬合金。"}, {"id": "drilldrake", "name": "鑽地龍", "sys": "em", "r": 3, "shape": "serpent", "pal": ["#c98a4b", "#8a5a32", "#9aa6c9"], "f": ["horn", "armor"], "hab": "峽谷地底", "role": "工程", "st": [78, 62, 109, 70, 70], "sk": "地鑽龍擊", "desc": "頭部是巨大的鑽頭，一天就能貫穿一座山。", "el": "土"}, {"id": "cablesnake", "name": "電纜蛇", "sys": "em", "r": 1, "shape": "serpent", "pal": ["#3b4470", "#262d52", "#ffd166"], "f": ["spark"], "hab": "廢棄電塔", "role": "通訊", "st": [41, 41, 46, 32, 69], "sk": "電流鞭", "desc": "外表像一條會動的電纜，會偷吃電塔的電。", "el": "雷"}, {"id": "crystalcrab", "name": "晶簇蟹", "sys": "em", "r": 2, "shape": "bug", "pal": ["#9fe7ff", "#5a8ab8", "#ff8fc0"], "f": ["claw", "crystal"], "hab": "晶石河床", "role": "守衛", "st": [84, 48, 54, 78, 36], "sk": "晶簇盾", "desc": "背上長著水晶簇，越老的晶簇蟹水晶越大。", "el": "土"}, {"id": "gearbug", "name": "齒輪甲蟲", "sys": "m", "r": 1, "shape": "bug", "pal": ["#c98a4b", "#8a5a32", "#ffd166"], "f": ["gear"], "hab": "廢棄工廠", "role": "維修", "st": [46, 46, 46, 46, 46], "sk": "齒輪滾擊", "desc": "會自己撿零件修補外殼，有時候會修到別人的機器上。"}, {"id": "flamebull", "name": "炎角牛", "sys": "e", "r": 2, "shape": "quad", "pal": ["#a84a3a", "#702a20", "#ff7a3d"], "f": ["horn", "flame"], "hab": "熔岩平原", "role": "搬運", "st": [60, 48, 84, 54, 54], "sk": "炎角衝撞", "desc": "角上燃燒著永不熄滅的火，脾氣也跟火一樣暴躁。", "el": "火"}, {"id": "mudfrog", "name": "泥沼蛙", "sys": "e", "r": 1, "shape": "blob", "pal": ["#7a8a48", "#5a6a30", "#f8d848"], "f": [], "hab": "沼澤", "role": "陪伴", "st": [46, 46, 46, 46, 46], "sk": "泥漿彈", "desc": "喜歡在泥巴裡打滾，下雨天會唱一整晚的歌。", "el": "水"}, {"id": "mistwisp", "name": "霧靈", "sys": "p", "r": 1, "shape": "blob", "pal": ["#d0e0f0", "#a0b8d0", "#ffffff"], "f": [], "hab": "霧氣瀰漫處", "role": "幻象", "st": [41, 64, 37, 37, 51], "sk": "迷霧幻影", "desc": "由濃霧凝聚而成的精靈，靠近時會覺得有點冷。"}, {"id": "bogcroc", "name": "沼澤鱷", "sys": "e", "r": 2, "shape": "quad", "pal": ["#5a7a48", "#3a5a30", "#f8e070"], "f": ["spikes"], "hab": "深沼", "role": "戰鬥", "st": [60, 48, 84, 54, 54], "sk": "沼地咬合", "desc": "只露出眼睛等待獵物，一等就是一整天。", "el": "水"}, {"id": "nightmoth", "name": "夜光蛾", "sys": "ep", "r": 1, "shape": "bug", "pal": ["#4a4060", "#2b2540", "#c9a7ff"], "f": ["wings", "antenna"], "hab": "夜晚的沼澤", "role": "幻象", "st": [41, 64, 37, 37, 51], "sk": "暗夜鱗粉", "desc": "翅膀的花紋在黑暗中會發出淡紫色的光。", "el": "暗"}, {"id": "icecray", "name": "冰晶蝦", "sys": "e", "r": 1, "shape": "fish", "pal": ["#c8f0ff", "#88c0e0", "#ffffff"], "f": ["fin"], "hab": "冷泉", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "冰晶彈", "desc": "住在沼澤底下的冷泉，殼像冰一樣透明。", "el": "冰"}, {"id": "shadowcrow", "name": "幽影鴉", "sys": "e", "r": 1, "shape": "bird", "pal": ["#3a3550", "#262040", "#ff5fa2"], "f": [], "hab": "枯木林", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "影羽", "desc": "會收集亮晶晶的東西，巢裡常找到遺失的晶幣。", "el": "暗"}, {"id": "lotus", "name": "睡蓮精", "sys": "p", "r": 2, "shape": "blob", "pal": ["#ff8fc0", "#7ec850", "#fff3c4"], "f": ["halo"], "hab": "靜水池", "role": "療癒", "st": [54, 84, 48, 48, 66], "sk": "睡蓮安眠", "desc": "坐在睡蓮上漂浮，牠在的池塘水質都特別乾淨。"}, {"id": "toad", "name": "毒菇蟾", "sys": "e", "r": 1, "shape": "blob", "pal": ["#8a5aa8", "#5a3a78", "#7ee08a"], "f": [], "hab": "沼澤菇叢", "role": "戰鬥", "st": [64, 37, 41, 60, 28], "sk": "毒霧", "desc": "背上長著菇類，吐出的霧氣會讓人頭昏。", "el": "暗"}, {"id": "frostfish", "name": "霜鱗魚", "sys": "e", "r": 2, "shape": "fish", "pal": ["#9fd6ff", "#5a8ab8", "#ffffff"], "f": ["fin", "crystal"], "hab": "冰冷深潭", "role": "戰鬥", "st": [60, 48, 84, 54, 54], "sk": "霜鱗刃", "desc": "游過的水面會結出薄薄一層冰。", "el": "冰"}, {"id": "nightmare", "name": "夢魘馬", "sys": "ep", "r": 3, "shape": "quad", "pal": ["#2b2540", "#4a4060", "#c9a7ff"], "f": ["mane", "horn", "aura"], "hab": "濃霧深處", "role": "傳說", "st": [70, 109, 62, 62, 86], "sk": "噩夢奔騰", "desc": "只在夢裡出現的黑馬，見過牠的人醒來都不記得夢的內容。", "el": "暗"}, {"id": "jellybot", "name": "水母機", "sys": "pm", "r": 2, "shape": "orb", "pal": ["#c9a7ff", "#5a637d", "#5ff3ff"], "f": ["ring"], "hab": "廢棄研究站", "role": "偵查", "st": [60, 60, 60, 60, 60], "sk": "電波觸鬚", "desc": "研究所遺失的偵測機器，不知何時有了自己的意識。"}, {"id": "mudpuppet", "name": "泥偶", "sys": "em", "r": 1, "shape": "golem", "pal": ["#8a7058", "#5a4838", "#f8d848"], "f": [], "hab": "泥灘", "role": "搬運", "st": [64, 37, 41, 60, 28], "sk": "泥巴重拳", "desc": "據說是古代人用泥土做的守衛，身上還留著符文。", "el": "土"}, {"id": "gargoyle", "name": "石像鬼", "sys": "em", "r": 2, "shape": "bird", "pal": ["#8a8a98", "#5a5a68", "#ff4d6d"], "f": ["horn", "wings2"], "hab": "遺跡屋簷", "role": "守衛", "st": [84, 48, 54, 78, 36], "sk": "石化凝視", "desc": "白天是石像，夜晚才會動起來巡邏遺跡。", "el": "暗"}, {"id": "ruinguard", "name": "遺跡守衛", "sys": "m", "r": 2, "shape": "golem", "pal": ["#a8a090", "#6a6458", "#5ff3ff"], "f": ["armor", "crystal"], "hab": "遺跡入口", "role": "守衛", "st": [84, 48, 54, 78, 36], "sk": "守衛光束", "desc": "古代文明留下的守衛機器，還在執行千年前的命令。"}, {"id": "runebutterfly", "name": "符文蝶", "sys": "ep", "r": 2, "shape": "bug", "pal": ["#fff3c4", "#c9a7ff", "#5ff3ff"], "f": ["wings", "crystal"], "hab": "遺跡庭園", "role": "占卜", "st": [54, 84, 48, 48, 66], "sk": "符文鱗粉", "desc": "翅膀上的花紋是古代文字，學者至今無法解讀。", "el": "光"}, {"id": "bonedrake", "name": "骸骨龍", "sys": "ep", "r": 3, "shape": "serpent", "pal": ["#e8e0d0", "#a8a090", "#c9a7ff"], "f": ["horn", "spikes", "aura"], "hab": "遺跡地底", "role": "傳說", "st": [78, 62, 109, 70, 70], "sk": "冥骨吐息", "desc": "古代戰爭中倒下的龍，被遺跡的晶核喚醒。", "el": "暗"}, {"id": "timefox", "name": "時空狐", "sys": "p", "r": 3, "shape": "quad", "pal": ["#c9a7ff", "#7b6cf6", "#ffd166"], "f": ["ears", "tailbig", "halo"], "hab": "遺跡時計塔", "role": "傳說", "st": [70, 70, 78, 55, 117], "sk": "時光倒流", "desc": "九條尾巴各自停在不同的時間，能看見過去和未來。"}, {"id": "starwhale", "name": "星辰鯨", "sys": "epm", "r": 3, "shape": "fish", "pal": ["#3b4470", "#262d52", "#fff3c4"], "f": ["big", "crystal", "aura"], "hab": "遺跡上空", "role": "傳說", "st": [78, 78, 78, 78, 78], "sk": "星辰之歌", "desc": "在夜空中游泳的巨鯨，身上的斑點是真正的星座。", "el": "光"}, {"id": "lightlion", "name": "光明獅", "sys": "e", "r": 3, "shape": "quad", "pal": ["#fff3c4", "#f8d848", "#ff8fb8"], "f": ["mane", "crown"], "hab": "遺跡神殿", "role": "傳說", "st": [78, 62, 109, 70, 70], "sk": "聖光咆哮", "desc": "古代神殿的守護獸，鬃毛像太陽一樣發光。", "el": "光"}, {"id": "shadowrat", "name": "暗影鼠", "sys": "e", "r": 1, "shape": "quad", "pal": ["#4a4060", "#2b2540", "#ff5fa2"], "f": ["ears"], "hab": "遺跡縫隙", "role": "偵查", "st": [41, 41, 46, 32, 69], "sk": "暗影突襲", "desc": "能從一個影子穿到另一個影子，常偷吃考古隊的便當。", "el": "暗"}, {"id": "ancientbot", "name": "古代機兵", "sys": "m", "r": 3, "shape": "golem", "pal": ["#c98a4b", "#8a5a32", "#5ff3ff"], "f": ["armor", "crystal", "gear"], "hab": "遺跡兵工廠", "role": "傳說", "st": [78, 62, 109, 70, 70], "sk": "古代光砲", "desc": "古代文明的最終兵器，胸口的晶核仍在跳動。"}, {"id": "crystalsprite", "name": "水晶精靈", "sys": "epm", "r": 2, "shape": "orb", "pal": ["#ff8fc0", "#9fe7ff", "#ffffff"], "f": ["crystal", "halo"], "hab": "遺跡晶脈", "role": "輔助", "st": [54, 84, 48, 48, 66], "sk": "晶光折射", "desc": "從轉職水晶碎片中誕生的小精靈，會模仿主人的表情。", "el": "光"}, {"id": "echostone", "name": "回音石", "sys": "pm", "r": 1, "shape": "orb", "pal": ["#a8a090", "#6a6458", "#c9a7ff"], "f": [], "hab": "遺跡迴廊", "role": "通訊", "st": [64, 37, 41, 60, 28], "sk": "回音震波", "desc": "會重複聽到的聲音，考古學家用牠記錄古代的聲音。"}, {"id": "gatedog", "name": "守門犬", "sys": "em", "r": 2, "shape": "quad", "pal": ["#e8e0d0", "#a8a090", "#f8d848"], "f": ["ears", "armor"], "hab": "遺跡大門", "role": "守衛", "st": [84, 48, 54, 78, 36], "sk": "光盾守護", "desc": "古代神殿的看門犬，不吃東西也不會老。", "el": "光"}, {"id": "ghostjelly", "name": "幽光水母", "sys": "ep", "r": 1, "shape": "blob", "pal": ["#9fe7ff", "#5a8ab8", "#c9a7ff"], "f": ["tentacle", "halo"], "hab": "遺跡地下水路", "role": "照明", "st": [41, 64, 37, 37, 51], "sk": "幽光觸手", "desc": "在黑暗的地下水路發出微光，帶迷路的人找到出口。", "el": "暗"}, {"id": "finalbird", "name": "終焉之鳥", "sys": "epm", "r": 3, "shape": "bird", "pal": ["#2b2540", "#ff5fa2", "#5ff3ff"], "f": ["wings2", "crown", "aura"], "hab": "遺跡之心", "role": "傳說", "st": [78, 78, 78, 78, 78], "sk": "終焉之翼", "desc": "傳說只在世界即將改變時才會出現的神鳥。", "el": "暗"}]);
+/* ===== 隱藏幻獸（★4・★5）===== */
+DEX.push(...[{"id": "emberwolf", "name": "焰狼王", "sys": "e", "r": 4, "shape": "quad", "pal": ["#ff5a1f", "#7a2010", "#ffd166"], "f": ["flame", "mane"], "hab": "熔岩火山口", "role": "王者", "st": [105, 70, 120, 85, 110], "sk": "焰牙獄火", "desc": "火山狼群的首領，奔跑時腳下的岩石都會熔化。", "hidden": 1, "el": "火"}, {"id": "tidelion", "name": "潮鬃獅", "sys": "e", "r": 4, "shape": "quad", "pal": ["#2f8fe0", "#1d3f8f", "#c4f1ff"], "f": ["mane", "fin"], "hab": "外海（乘騎水屬性幻獸）", "role": "守護", "st": [115, 80, 110, 95, 95], "sk": "怒潮咆哮", "desc": "鬃毛是不斷翻湧的海水，只在無人的海面上現身。", "hidden": 1, "el": "水"}, {"id": "thunderhawk", "name": "雷霆鵰", "sys": "e", "r": 4, "shape": "bird", "pal": ["#ffe600", "#3b4470", "#ffffff"], "f": ["spark", "crystal"], "hab": "風車草原高空", "role": "巡天", "st": [90, 75, 115, 70, 130], "sk": "千雷俯衝", "desc": "雷雨天才會從雲層裡俯衝而下，翅膀一振就是一道閃電。", "hidden": 1, "el": "雷"}, {"id": "frostbear", "name": "冰原熊", "sys": "e", "r": 4, "shape": "quad", "pal": ["#e9f4ff", "#9fc8e8", "#6ff0ff"], "f": ["crystal"], "hab": "冰霜山道", "role": "守護", "st": [140, 60, 110, 120, 60], "sk": "冰河重擊", "desc": "背上長著萬年不化的冰晶，一掌能拍碎冰山。", "hidden": 1, "el": "冰"}, {"id": "jadedeer", "name": "翡翠鹿王", "sys": "e", "r": 4, "shape": "quad", "pal": ["#3dff6e", "#2f7a55", "#fff3a0"], "f": ["antler", "aura"], "hab": "幻獸森林深處", "role": "森林之王", "st": [110, 95, 95, 85, 115], "sk": "翠風之舞", "desc": "鹿角上會長出新葉，走過的地方會開滿花。", "hidden": 1, "el": "風"}, {"id": "sandscorp", "name": "沙暴蠍皇", "sys": "e", "r": 4, "shape": "bug", "pal": ["#e8c070", "#8a5a32", "#ff7a3d"], "f": ["stinger", "armor"], "hab": "晶石峽谷", "role": "霸主", "st": [115, 60, 125, 115, 75], "sk": "沙暴毒尾", "desc": "峽谷沙暴的真正源頭，尾針能貫穿岩壁。", "hidden": 1, "el": "土"}, {"id": "moonmoth", "name": "月影蛾", "sys": "ep", "r": 4, "shape": "bug", "pal": ["#c9d3ff", "#4a4060", "#ff8af4"], "f": ["aura"], "hab": "霧谷深林（月夜）", "role": "夢境", "st": [95, 120, 85, 80, 110], "sk": "月影鱗粉", "desc": "翅膀上的鱗粉會讓人看見最想見的人的幻影。", "hidden": 1, "el": "暗"}, {"id": "dreambat", "name": "夢語蝠", "sys": "p", "r": 4, "shape": "bird", "pal": ["#7b6cf6", "#2b1d44", "#ff8fc0"], "f": ["ring"], "hab": "霧隱濕地", "role": "夢境", "st": [95, 125, 80, 75, 115], "sk": "夢囈音波", "desc": "能用超音波潛入別人的夢裡說話。", "hidden": 1}, {"id": "mindowl", "name": "智者梟", "sys": "p", "r": 4, "shape": "bird", "pal": ["#c9a7ff", "#5a3d7a", "#ffd166"], "f": ["halo"], "hab": "古代遺跡", "role": "智者", "st": [100, 130, 75, 90, 95], "sk": "千年預知", "desc": "據說牠讀完了遺跡裡所有的石板文字。", "hidden": 1}, {"id": "mechlion", "name": "機甲獅", "sys": "m", "r": 4, "shape": "quad", "pal": ["#9aa6c9", "#3b4470", "#1ff5ff"], "f": ["armor", "gear"], "hab": "西郊林道", "role": "兵器", "st": [120, 70, 120, 115, 85], "sk": "雷射獅吼", "desc": "舊戰爭留下的獅型機甲，至今仍在執行巡邏指令。", "hidden": 1}, {"id": "coredrone", "name": "核心浮游砲", "sys": "m", "r": 4, "shape": "orb", "pal": ["#5a637d", "#262a4f", "#ff4d6d"], "f": ["ring", "spark"], "hab": "古代遺跡", "role": "兵器", "st": [95, 110, 115, 80, 110], "sk": "晶核砲擊", "desc": "遺跡防衛系統的核心，能同時鎖定十個目標。", "hidden": 1}, {"id": "steelcrab", "name": "鋼鐵巨蟹", "sys": "em", "r": 4, "shape": "bug", "pal": ["#4fd6c0", "#2b5f80", "#9aa6c9"], "f": ["armor", "claw"], "hab": "海岸小徑・外海", "role": "鐵壁", "st": [125, 60, 115, 135, 55], "sk": "鋼鉗粉碎", "desc": "一半是蟹殼一半是鋼板，能用鉗子剪斷船錨。", "hidden": 1, "el": "水"}, {"id": "vinedragon", "name": "綠藤龍", "sys": "e", "r": 4, "shape": "serpent", "pal": ["#3dff6e", "#2f6a3a", "#ff8fc0"], "f": ["horn"], "hab": "花徑小道", "role": "守護", "st": [115, 90, 105, 100, 95], "sk": "百花絞殺", "desc": "身上開著各種顏色的花，被牠纏住會聞到很香的味道。", "hidden": 1, "el": "土"}, {"id": "crystalturtle", "name": "晶甲玄武", "sys": "em", "r": 4, "shape": "quad", "pal": ["#6ff0ff", "#3b4470", "#c4f1ff"], "f": ["crystal"], "hab": "珊瑚礁洞窟・外海", "role": "鐵壁", "st": [150, 80, 85, 145, 40], "sk": "玄武晶壁", "desc": "背甲是一整塊天然晶核，已經活了三百年。", "hidden": 1, "el": "土"}, {"id": "phantomcat", "name": "幻影貓", "sys": "ep", "r": 4, "shape": "quad", "pal": ["#2b1d44", "#7b4cc0", "#ff5fb0"], "f": ["aura", "stripes"], "hab": "霧谷深林", "role": "刺客", "st": [90, 105, 115, 70, 130], "sk": "幻影連爪", "desc": "會同時出現在三個地方，只有一隻是真的。", "hidden": 1, "el": "暗"}, {"id": "sunbird", "name": "赤陽鳥", "sys": "e", "r": 4, "shape": "bird", "pal": ["#ff7a3d", "#ffd166", "#fff36a"], "f": ["flame"], "hab": "熔岩火山口", "role": "巡天", "st": [95, 95, 115, 75, 120], "sk": "赤陽俯衝", "desc": "在火山口上空盤旋，羽毛掉下來會點燃枯草。", "hidden": 1, "el": "火"}, {"id": "deepangler", "name": "深海燈王", "sys": "ep", "r": 4, "shape": "fish", "pal": ["#1d3f8f", "#0b1430", "#5ff3ff"], "f": ["lure", "aura"], "hab": "外海（乘騎水屬性幻獸）", "role": "深淵", "st": [110, 115, 105, 85, 85], "sk": "深淵誘光", "desc": "頭上的燈能照亮整片深海，也能讓獵物失神。", "hidden": 1, "el": "水"}, {"id": "gearsnake", "name": "齒輪巨蛇", "sys": "m", "r": 4, "shape": "serpent", "pal": ["#c98a4b", "#5a3d2f", "#ffd166"], "f": ["gear"], "hab": "晶石峽谷", "role": "兵器", "st": [120, 75, 110, 110, 85], "sk": "齒輪絞殺", "desc": "由上千個齒輪組成，移動時發出轟隆隆的聲音。", "hidden": 1}, {"id": "aurorafox", "name": "極光九尾", "sys": "epm", "r": 5, "shape": "quad", "pal": ["#e9ecff", "#7ee08a", "#c9a7ff"], "f": ["aura", "crystal", "tailbig"], "hab": "冰霜山道（極光之夜）", "role": "傳說", "st": [120, 135, 115, 100, 130], "sk": "極光天幕", "desc": "九條尾巴各帶著一種極光的顏色，看見牠的人一生都會幸運。", "hidden": 1, "el": "冰"}, {"id": "abyssdragon", "name": "深淵海龍", "sys": "ep", "r": 5, "shape": "serpent", "pal": ["#1d3f8f", "#0b1430", "#5ff3ff"], "f": ["horn", "fin", "aura"], "hab": "外海深處（乘騎水屬性幻獸）", "role": "傳說", "st": [135, 125, 130, 110, 100], "sk": "深淵怒濤", "desc": "沉睡在海底的古龍，翻身時會掀起海嘯。", "hidden": 1, "el": "水"}, {"id": "solarlion", "name": "日冕獅王", "sys": "ep", "r": 5, "shape": "quad", "pal": ["#fff04a", "#e0a83a", "#ffffff"], "f": ["mane", "crown", "aura"], "hab": "星辰遺跡", "role": "傳說", "st": [130, 120, 135, 110, 105], "sk": "日冕審判", "desc": "鬃毛是燃燒的日冕，夜晚也能把遺跡照得像白天。", "hidden": 1, "el": "光"}, {"id": "stormqilin", "name": "風雷麒麟", "sys": "em", "r": 5, "shape": "quad", "pal": ["#ffe600", "#3b4470", "#5ff3ff"], "f": ["horn", "spark", "aura"], "hab": "風車草原（雷雨天）", "role": "傳說", "st": [120, 115, 130, 100, 135], "sk": "風雷天降", "desc": "踏雲而行，四蹄之下就是一場雷暴。", "hidden": 1, "el": "雷"}, {"id": "voidwhale", "name": "虛空鯨", "sys": "epm", "r": 5, "shape": "fish", "pal": ["#2b1d44", "#7b4cc0", "#ff8af4"], "f": ["aura", "crystal"], "hab": "星辰遺跡・外海", "role": "傳說", "st": [160, 130, 105, 115, 85], "sk": "虛空吞噬", "desc": "在星空與深海之間游動，身體裡裝著另一片宇宙。", "hidden": 1, "el": "暗"}, {"id": "worldtree", "name": "世界樹之靈", "sys": "ep", "r": 5, "shape": "golem", "pal": ["#5a3d2f", "#3dff6e", "#fff3a0"], "f": ["crown", "aura"], "hab": "幻獸森林最深處", "role": "傳說", "st": [150, 130, 105, 125, 80], "sk": "萬物復甦", "desc": "森林所有樹木的意志集合而成，傳說是第一棵樹的靈魂。", "hidden": 1, "el": "土"}, {"id": "timeowl", "name": "時之梟神", "sys": "p", "r": 5, "shape": "bird", "pal": ["#c9d3ff", "#7b6cf6", "#ffd166"], "f": ["halo", "aura"], "hab": "古代遺跡最深處", "role": "傳說", "st": [120, 150, 100, 105, 115], "sk": "時間停止", "desc": "能看見過去和未來，牠眨一次眼就是一百年。", "hidden": 1}, {"id": "omegabot", "name": "歐米茄機神", "sys": "m", "r": 5, "shape": "golem", "pal": ["#e9ecff", "#3b4470", "#ff4d6d"], "f": ["armor", "crown", "gear"], "hab": "古代遺跡・星辰遺跡", "role": "傳說", "st": [145, 110, 135, 135, 70], "sk": "終極機神砲", "desc": "古代文明最後的守護兵器，至今還在等待主人回來。", "hidden": 1}, {"id": "phoenix", "name": "不死鳥", "sys": "e", "r": 5, "shape": "bird", "pal": ["#ff5a1f", "#ffd166", "#fff36a"], "f": ["flame", "crown", "aura"], "hab": "熔岩火山口", "role": "傳說", "st": [125, 130, 130, 95, 125], "sk": "涅槃之焰", "desc": "每一百年在火山口燃盡自己，再從灰燼中重生。", "hidden": 1, "el": "火"}, {"id": "leviathan", "name": "利維坦", "sys": "em", "r": 5, "shape": "serpent", "pal": ["#1fb2ff", "#1d3f8f", "#c4f1ff"], "f": ["armor", "fin", "crown"], "hab": "珊瑚礁洞窟・外海", "role": "傳說", "st": [155, 110, 135, 130, 75], "sk": "海神鋼浪", "desc": "覆蓋著鋼鐵鱗片的海神，古代船員最害怕的名字。", "hidden": 1, "el": "水"}, {"id": "dreamqueen", "name": "夢境女王蝶", "sys": "p", "r": 5, "shape": "bug", "pal": ["#ff8fc0", "#c9a7ff", "#fff3c4"], "f": ["crown", "aura"], "hab": "花徑小道（滿月）", "role": "傳說", "st": [115, 150, 95, 100, 125], "sk": "女王的夢境", "desc": "所有蝴蝶的女王，翅膀一拍就能讓整座城市入睡。", "hidden": 1}, {"id": "chaoscore", "name": "混沌晶核獸", "sys": "epm", "r": 5, "shape": "orb", "pal": ["#7b6cf6", "#14162b", "#ff5fa2"], "f": ["aura", "spark", "ring"], "hab": "霧谷深林・霧隱濕地", "role": "傳說", "st": [130, 140, 125, 110, 95], "sk": "混沌爆裂", "desc": "黑色晶核的源頭，體內同時流著三種互相衝突的力量。", "hidden": 1, "el": "暗"}]);
 const SYSN={e:'元素',p:'精神',m:'機械'};
 /* 所有幻獸都能成為夥伴：補上招牌技能 */
 for(const d of DEX){const sn=d.sys.length>1?'融合':SYSN[d.sys];
@@ -722,8 +765,17 @@ function formObj(d,bi,si){
   if(d.id==='slime')f.add('crown');
   return formCache[id]={id,name:st[0],shape:d.shape,pal:[m1,s1,a1],f:[...f],sys,stage:si+1,route:br.r,el:d.el};
 }
-function curForm(b){const d=DEX.find(x=>x.id===b.key);return b.form?formObj(d,b.form[0],b.form[1]):d}
-const beastName=b=>curForm(b).name;
+function curForm(b){const d=DEX.find(x=>x.id===b.key),f=b.form?formObj(d,b.form[0],b.form[1]):d;return b.shiny?shinyOf(f):f}
+const beastName=b=>curForm(b).name+(b.shiny?'✦':'');
+/* ===== 異色幻獸：色相旋轉的配色，野外遇見機率 0.001% ===== */
+const SHINY_RATE=0.00001;
+function hueRot(h,deg){let [r,g,b]=hx2(h).map(v=>v/255);const mx=Math.max(r,g,b),mn=Math.min(r,g,b);let l=(mx+mn)/2,l2=null,H=0,S=0;
+  if(mx!==mn){const d=mx-mn;S=l>.5?d/(2-mx-mn):d/(mx+mn);H=mx===r?(g-b)/d+(g<b?6:0):mx===g?(b-r)/d+2:(r-g)/d+4;H/=6}
+  if(mx-mn<.2){H=((deg%360)+40)/360;S=.6;if(l>.82)l2=.78}H=(H+deg/360)%1;S=Math.min(1,S*1.1+.05);if(l2!=null)l=l2;const q=l<.5?l*(1+S):l+S-l*S,p=2*l-q,f=t=>{t=(t+1)%1;return t<1/6?p+(q-p)*6*t:t<.5?q:t<2/3?p+(q-p)*(2/3-t)*6:p};
+  return '#'+[f(H+1/3),f(H),f(H-1/3)].map(v=>Math.round(v*255).toString(16).padStart(2,'0')).join('')}
+const shinyCache={};
+function shinyOf(d){const k=d.id+'~s';if(shinyCache[k])return shinyCache[k];const deg=150+(strHash(d.id.split('~')[0])%60);
+  return shinyCache[k]=Object.assign({},d,{id:k,pal:d.pal.map((c,i)=>hueRot(c,i===2?deg-90:deg)),shiny:1})}
 /* ================= 擬真像素立繪：48×48 體積光影渲染 ================= */
 const SPR=48,SG=45;
 const BAYER4=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5];
@@ -751,6 +803,7 @@ const FMAP={shark:'shark',whale:'whale',starwhale:'whale',angler:'angler',icecra
 const OMAP={drone:'drone',holo:'holo',jellybot:'jellybot',crystalsprite:'crys',echostone:'stone'};
 const GMAP={ruinguard:'bot',ancientbot:'bot',puppet:'puppet',dryad:'dryad'};
 const SMAP={dragon:'dragon',drilldrake:'drill',cablesnake:'cable',bonedrake:'bone',vinesnake:'vine'};
+Object.assign(QMAP,{emberwolf:'canine',tidelion:'lion',frostbear:'bear',jadedeer:'hoof',mechlion:'lion',crystalturtle:'turtle',phantomcat:'feline',aurorafox:'canine',solarlion:'lion',stormqilin:'hoof'});Object.assign(BMAP,{thunderhawk:'raptor',dreambat:'bat',mindowl:'owl',sunbird:'raptor',timeowl:'owl',phoenix:'raptor'});Object.assign(UMAP,{sandscorp:'scorp',moonmoth:'moth',steelcrab:'crab',dreamqueen:'fly'});Object.assign(FMAP,{deepangler:'angler',voidwhale:'whale'});Object.assign(OMAP,{coredrone:'drone',chaoscore:'crys'});Object.assign(GMAP,{worldtree:'dryad',omegabot:'bot'});Object.assign(SMAP,{vinedragon:'vine',gearsnake:'cable',abyssdragon:'dragon',leviathan:'dragon'});
 const LMAP={mole:'mole',jelly:'jelly',ghostjelly:'jelly',wisp:'ghost',mistwisp:'ghost',sheep:'sheep',mushroom:'shroom',lavasnail:'snail',mudfrog:'frog',toad:'frog',lotus:'lotus',slime:'slime'};
 function sprPlan(d){const b=d.id.split('~')[0];
   return d.shape==='quad'?QMAP[b]||'canine':d.shape==='bird'?BMAP[b]||'perch':d.shape==='bug'?UMAP[b]||'beetle':d.shape==='fish'?FMAP[b]||'fish':d.shape==='orb'?OMAP[b]||'drone':d.shape==='golem'?GMAP[b]||'golem':d.shape==='serpent'?SMAP[b]||'snake':LMAP[b]||'round'}
@@ -1214,7 +1267,7 @@ function dexURL(d,back){
   const ck=d.id+(back?'~b':'');if(dexCache[ck])return dexCache[ck];
   const base=d.id.split('~')[0],bd=DEX.find(x=>x.id===base)||d,st=d.stage||0;
   const B=sprBuild(d);
-  const k=Math.min(1,(bd.r===3?.96:bd.r===2?.9:.86)+st*.07);sprScale(B,k);
+  const k=Math.min(1,(bd.r>=3?.96:bd.r===2?.9:.86)+st*.07);sprScale(B,k);
   const MT=sprMats(d,B.plan),R=sprRaster(B.P);
   const c=document.createElement('canvas');c.width=c.height=SPR;const g=c.getContext('2d');
   const img=sprShade(R,B.P,MT,g);sprInner(img,R.dep);sprDecals(img,R.dep,B.ops,MT);sprOutline(img);sprDecals(img,R.dep,B.post,MT);
@@ -1351,6 +1404,8 @@ const QUESTS=[
   {id:'tk_volcano',kind:'委託',title:'地熱調查護衛',need:1,show:()=>qv('tk_volcano')>0,count:()=>qv('tk_volcano')===2?1:0,prog:()=>[qv('tk_volcano')===2?15:Math.min(15,qv('engw')),15],hint:'打贏 15 場野生幻獸戰鬥，再回風車鎮找工程師。',reward:'火山島航線',exp:0,give:()=>{}},
   {id:'tk_star',kind:'委託',title:'星圖與幻獸',need:1,show:()=>qv('tk_star')>0,count:()=>qv('tk_star')===2?1:0,prog:()=>[qv('tk_star')===2?40:Math.min(40,(G.seen||[]).length),40],hint:'讓圖鑑看過 40 種幻獸，再回雪原鎮找占星師。',reward:'星辰島航線',exp:0,give:()=>{}},
   {id:'wmap',kind:'委託',title:'製作世界地圖',need:1,show:()=>qv('wmap')>0,count:()=>qv('wmap')===2?1:0,prog:()=>[qv('wmap')===2?5:Math.min(5,(G.visited||[]).filter(x=>TOWNLIST.includes(x)).length),5],hint:'走訪 5 座不同的城鎮（晶光鎮、中央廣場也算），再回中央廣場找地圖繪製師。',reward:'世界地圖・500 晶幣',exp:0,give:()=>{}},
+  {id:'ride',kind:'委託',title:'乘騎幻獸',need:1,show:()=>qv('ride')>0,count:()=>qv('ride')===2?1:0,prog:()=>[qv('ride')===2?2:Math.max(0,...G.beasts.map(b=>(b.lv>=25)+((b.aff||0)>=80))),2],hint:'讓一隻幻獸達到 Lv.25 以上、親密度 80 以上，再回風車鎮找騎士蕾雅。',reward:'乘騎鞍（移動速度 +300%）',exp:0,give:()=>{}},
+  {id:'seachild',kind:'委託',title:'海洋之子',need:1,show:()=>qv('seachild')>0,count:()=>qv('seachild')===2?1:0,prog:()=>[qv('seachild')===2?3:Math.min(3,waterKinds()),3],hint:'收集 3 種不同的水屬性幻獸（隊伍或保管箱），再回港灣鎮碼頭找海洋之子「汐」。',reward:'海之貝笛（面向大海按 A，乘著水屬性幻獸在海上前進）',exp:0,give:()=>{}},
   {id:'letter',kind:'委託',title:'奶奶的信',need:2,show:()=>(G.q.letter||0)>0,count:()=>Math.max(0,(G.q.letter||0)-1),hint:'把奶奶的信交給中央廣場戴綠帽子的郵差小哥，再回晶光鎮北邊的奶奶家回報。',reward:'秘傳進化鍊（焰尾蜥）・EXP 30',exp:30,give:()=>unlockHidden('lizard')},
   {id:'moon',kind:'委託',title:'釣魚大叔的月光露',need:1,show:()=>(G.q.moon||0)>0,count:()=>G.q.moon===2?1:0,hint:'在野外戰鬥中撿到「月光露」，交給晶湖東岸的釣魚大叔。',reward:'秘傳進化鍊（夢水母）・EXP 30',exp:30,give:()=>unlockHidden('jelly')},
   {id:'master',kind:'委託',title:'老師傅的考驗',need:1,show:()=>(G.q.master||0)>0,count:()=>G.q.master===2?1:0,prog:()=>[G.q.master===2?5:Math.min(5,G.q.mw||0),5],hint:'轉職後在晶光鎮的高草叢打贏 5 場，再回晶光大道找工廠老師傅。',reward:'秘傳進化鍊（齒輪鴞）・EXP 40',exp:40,give:()=>unlockHidden('owl')},
@@ -1550,6 +1605,10 @@ Object.assign(MZ,{
   i_volcano:{name:'熔岩火山口',theme:'canyon',floors:2,seed:5153,cw:10,ch:8,o:'ns',exit:true,lv:[52,58],pre:null,post:['volcano','N'],pool:[['lizard',6],['lavasnail',6],['volcfinch',5],['flamebull',4],['bee',4],['rocklizard',4],['drilldrake',2],['oregolem',3],['thunderscorp',3],['dragon',.3]]},
   i_star:{name:'星辰遺跡',theme:'ruins',floors:2,seed:5297,cw:10,ch:8,o:'ns',exit:true,lv:[62,68],pre:null,post:['star','N'],pool:[['runebutterfly',5],['crystalsprite',4],['seer',4],['holo',4],['wisp',5],['butterfly',5],['timefox',1],['starwhale',.8],['lightlion',.8],['finalbird',.4]]}
 });
+const HIDDEN_AT={forest:[['jadedeer',.5],['worldtree',.15]],canyon:[['sandscorp',.5],['gearsnake',.5]],swamp:[['dreambat',.5],['chaoscore',.12]],ruins:[['mindowl',.5],['coredrone',.5],['timeowl',.15],['omegabot',.12]],
+  r_flower:[['vinedragon',.5],['dreamqueen',.15]],r_windmill:[['thunderhawk',.5],['stormqilin',.15]],r_mist:[['moonmoth',.5],['phantomcat',.5],['chaoscore',.12]],r_west:[['mechlion',.5]],
+  r_frost:[['frostbear',.5],['aurorafox',.15]],r_coast:[['steelcrab',.5]],i_coral:[['crystalturtle',.5],['leviathan',.15]],i_volcano:[['emberwolf',.5],['sunbird',.5],['phoenix',.15]],i_star:[['solarlion',.15],['voidwhale',.15],['omegabot',.15]]};
+for(const [k,l] of Object.entries(HIDDEN_AT))MZ[k].pool=MZ[k].pool.concat(l);
 const MZF={};
 for(const [base,z] of Object.entries(MZ)){MZF[base]=[];
   for(let k=1;k<=z.floors;k++){const id=k===1?base:base+k,last=k===z.floors,ex=last?z.exit:true;
@@ -1659,7 +1718,9 @@ function whereName(){
 /* ================= actors ================= */
 const DV={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
 function mkActor(o){return Object.assign({x:0,y:0,fx:0,fy:0,t:1,moving:false,dir:'down',speed:4,queue:[],done:null,par:0,hidden:false,px:0,py:0,frame:0,wt:1.5},o)}
-function place(a,x,y,dir){a.x=a.fx=x;a.y=a.fy=y;a.moving=false;a.t=1;a.px=x*TS;a.py=y*TS;if(dir)a.dir=dir}
+let SURF=null; // 正在乘著哪一隻水屬性幻獸（隊伍索引）
+function place(a,x,y,dir){a.x=a.fx=x;a.y=a.fy=y;a.moving=false;a.t=1;a.px=x*TS;a.py=y*TS;if(dir)a.dir=dir;
+  if(SURF!=null&&a===player&&tileAt(MAP,x,y)!=='w'){SURF=null;if(G&&G.flags)delete G.flags.surfing}}
 const player=mkActor({kind:'person',speed:4.4,look:{hair:'#2b2d42',skin:'#f6c9a0',shirt:'#3a86ff',belt:'#1d3f8f',pants:'#262a4f',accent:'#5ff3ff'}});
 const mom=mkActor({kind:'person',speed:3.6,hidden:true,look:{hair:'#7a3e2b',skin:'#f3c29a',shirt:'#e07a9a',belt:'#f2e2c4',pants:'#b85c7c',accent:'#f2e2c4',long:true}});
 const doc=mkActor({kind:'person',look:{hair:'#dfe3ee',skin:'#efc4a0',shirt:'#f4f6fb',belt:'#c9cfe8',pants:'#3b4470',accent:'#ff5fa2',coat:true,inner:'#3b4470',goggles:'#5ff3ff'}});
@@ -1767,13 +1828,15 @@ place(player,1,2,'down');player.asleep=true;
 function others(a){return [player,...MAP.actors].filter(o=>o!==a&&!o.hidden)}
 function free(a,x,y){
   const ch=tileAt(MAP,x,y);
-  if(MAP.solid.includes(ch)||x<0||y<0||x>=MAP.w||y>=MAP.h)return false;
+  if(x<0||y<0||x>=MAP.w||y>=MAP.h)return false;
+  if(MAP.solid.includes(ch)&&!(a===player&&SURF!=null&&ch==='w'))return false;
   if(a.wander){const b=a.wander.box;if(!a.wander.chars.includes(ch)||x<b[0]||x>b[2]||y<b[1]||y>b[3])return false}
   return !others(a).some(o=>(o.x===x&&o.y===y)||(o.moving&&o.fx===x&&o.fy===y));
 }
 function startMove(a,d,force){
   a.dir=d;const nx=a.x+DV[d][0],ny=a.y+DV[d][1];
   if(!force&&!free(a,nx,ny))return false;
+  if(a===player)a.speed=mountBeast()?4.4*4:4.4;
   a.fx=a.x;a.fy=a.y;a.x=nx;a.y=ny;a.t=0;a.moving=true;return true;
 }
 function moveSteps(a,dirs){return new Promise(r=>{a.queue=dirs.slice();a.done=r})}
@@ -1887,7 +1950,30 @@ function inkLayer(w,h){const img=objG.getImageData(0,0,w,h),d=img.data,o=olG.cre
   olG.putImageData(o,0,0)}
 const actC=document.createElement('canvas');actC.width=24;actC.height=26;const actG=actC.getContext('2d');
 const outC=document.createElement('canvas');outC.width=24;outC.height=26;const outG=outC.getContext('2d');
+/* ===== 乘騎：主角騎在幻獸身上 ===== */
+const INDOOR=()=>!!(MAP.room||['home','lab','library'].includes(MAP.id));
+function rideOn(){return !!(G&&G.flags&&G.flags.ride&&G.beasts&&G.beasts.length&&!INDOOR()&&!BT)}
+function mountBeast(){if(!G||!G.beasts)return null;if(SURF!=null&&G.beasts[SURF])return G.beasts[SURF];return rideOn()?G.beasts[0]:null}
+const MIMG={};function mountImg(b){const u=dexURL(curForm(b));let im=MIMG[u];if(!im){im=new Image();im.src=u;MIMG[u]=im}return im}
+const mntC=document.createElement('canvas');mntC.width=40;mntC.height=46;const mntG=mntC.getContext('2d');
+const mntO=document.createElement('canvas');mntO.width=40;mntO.height=46;const mntOG=mntO.getContext('2d');
+function drawMounted(a,t,b){
+  const X=Math.round(a.px),Y=Math.round(a.py)-2,sea=SURF!=null;
+  if(a.dir==='left'||a.dir==='right')a.lastH=a.dir;const face=a.lastH||'left';
+  const bob=sea?Math.round(Math.sin(t*5)):(a.moving?(Math.floor(a.t*4)%2?-1:0):0);
+  if(sea){ctx.globalAlpha=.55;for(let i=0;i<3;i++){const r=9+i*3+((t*10+i*4)%4|0);px(X+8-r,Y+14+i,r*2,1,'#e9f8ff')}ctx.globalAlpha=1}
+  else{ctx.globalAlpha=.25;px(X-4,Y+14,24,3,'#204020');ctx.globalAlpha=1}
+  const main=ctx;ctx=mntG;mntG.clearRect(0,0,40,46);
+  try{const sd=a.dir,fr=a.frame;a.dir=face;a.frame=0;drawPerson(a,12,19+bob);a.dir=sd;a.frame=fr;
+    const im=mountImg(b);if(im.complete&&im.naturalWidth){mntG.imageSmoothingEnabled=false;mntG.save();if(face==='right'){mntG.translate(40,0);mntG.scale(-1,1)}mntG.drawImage(im,2,10+bob,36,36);mntG.restore()}
+  }finally{ctx=main}
+  outlinePass(mntG,mntOG,40,46,'#08060e');
+  if(sea){ctx.drawImage(mntO,0,0,40,40,X-12,Y-24,40,40);
+    ctx.globalAlpha=.85;for(let i=0;i<6;i++){const xx=X-6+i*5+((t*6|0)%2);px(xx,Y+15,3,1,'#ffffff')}ctx.globalAlpha=1}
+  else ctx.drawImage(mntO,X-12,Y-28);
+}
 function drawActor(a,t){
+  if(a===player&&mode!=='title'){const mb=mountBeast();if(mb)return drawMounted(a,t,mb)}
   const X=Math.round(a.px),Y=Math.round(a.py)-2;
   ctx.globalAlpha=.25;px(X+3,Y+15,10,2,'#204020');ctx.globalAlpha=1;
   const main=ctx;ctx=actG;actG.clearRect(0,0,24,26);
@@ -2297,7 +2383,7 @@ function ptext(str,x,y,sc,col){let cx=x-Math.round(str.length*4*sc/2);for(const 
 function ell(cx,cy,rx,ry,col){for(let y=-ry;y<=ry;y++){const w=Math.round(rx*Math.sqrt(Math.max(0,1-(y*y)/(ry*ry))));px(cx-w,cy+y,w*2+1,1,col)}}
 function mkPC(){const c=pcCur(),h=hidden();return{side:'a',kind:'pc',name:hero,lv:G.char.lv,hp:c.hp,max:maxHP(),mp:c.mp,mpMax:maxMP(),...h}}
 function mkAlly(b){bCur(b);const st=bStats(b),h=hidden();return{side:'a',kind:'beast',ref:b,key:b.key,name:beastName(b),lv:b.lv,form:curForm(b),hp:b.hp,max:st.hp,mp:b.mp,mpMax:st.mp,atk:st.atk,mat:st.mat,def:st.def,spd:st.spd,crit:Math.round((5+(h.crit-5)/2)*10)/10,eva:Math.round((5+(h.eva-5)/2)*10)/10}}
-function mkFoe(key,lv){const d=DEX.find(x=>x.id===key),st=beastStats(key,lv);return{g:rndG(),side:'f',kind:'foe',key,name:d.name,lv,hp:st.hp,max:st.hp,mp:st.mp,mpMax:st.mp,atk:st.atk,mat:st.mat,def:st.def,spd:st.spd,crit:5,eva:5,sk:d.sk,mag:d.sys[0]==='p'}}
+function mkFoe(key,lv,shiny){const d=DEX.find(x=>x.id===key),st=beastStats(key,lv);return{shiny:!!shiny,form:shiny?shinyOf(d):undefined,g:rndG(),side:'f',kind:'foe',key,name:d.name+(shiny?'✦':''),lv,hp:st.hp,max:st.hp,mp:st.mp,mpMax:st.mp,atk:st.atk,mat:st.mat,def:st.def,spd:st.spd,crit:5,eva:5,sk:d.sk,mag:d.sys[0]==='p'}}
 function unitRow(u){const r=Math.max(0,u.hp/u.max);return `<div class="bu${u.hp<=0?' bko':''}"><div class="nm"><span>${esc(u.name)} <span class="bnum">Lv.${u.lv}</span></span><span class="bnum">${u.hp}/${u.max}</span></div><div class="hpb${r<.25?' crit':r<.5?' low':''}"><i style="width:${r*100}%"></i></div>${u.side==='a'?`<div class="hpb mpb"><i style="width:${Math.max(0,u.mp/u.mpMax*100)}%"></i></div>`:''}</div>`}
 function renderHud(){$('#bEnemy').innerHTML=unitRow(BT.foe);$('#bAlly').innerHTML=unitRow(BT.pc)+unitRow(BT.bs)}
 function setLog(t){bLog.textContent=t}
@@ -2316,19 +2402,19 @@ function openSkills(u){
   BT.menu={lv:'skill',sel:0,cols:1,opts:ids.map(id=>({label:SKILLS[id].name,note:`MP ${SKILLS[id].mp}・${skillNote(id,u.kind==='pc'?null:u.ref)}${isMag(SKILLS[id])&&!SKILLS[id].eff?'・魔法':''}`,v:id,dis:u.mp<SKILLS[id].mp}))};
   setLog('選擇技能（X 返回）');renderCmd();}
 function openItems(){
-  const its=G.bag.filter(x=>x.id==='potion'||x.id==='battery'||(NETK[x.id]&&BT.opts.canCatch));
+  const its=G.bag.filter(x=>HEAL[x.id]||(NETK[x.id]&&BT.opts.canCatch));
   if(!its.length){setLog('背包裡沒有能在戰鬥中使用的道具。');return}
   BT.menu={lv:'item',sel:0,cols:1,opts:its.map(x=>({label:ITEMS[x.id].name,note:`×${x.n}`,v:x.id}))};setLog('選擇道具（X 返回）');renderCmd();}
 function openTarget(item){
   const al=[BT.pc,BT.bs].filter(u=>u.hp>0);
-  BT.menu={lv:'target',item,sel:0,cols:1,opts:al.map(u=>({label:u.name,note:item==='potion'?`HP ${u.hp}/${u.max}`:`MP ${u.mp}/${u.mpMax}`,v:u}))};
+  BT.menu={lv:'target',item,sel:0,cols:1,opts:al.map(u=>({label:u.name,note:HEAL[item].hp?`HP ${u.hp}/${u.max}`+(HEAL[item].mp?`・MP ${u.mp}/${u.mpMax}`:''):`MP ${u.mp}/${u.mpMax}`,v:u}))};
   setLog(`要對誰使用「${ITEMS[item].name}」？`);renderCmd();}
 function pick(i){
   const m=BT.menu,o=m&&m.opts[i];if(!o||o.dis)return;const u=BT.unit;
   const done=a=>{BT.menu=null;renderCmd();const r=BT.res;BT.res=null;r(a)};
   if(m.lv==='main'){if(o.v==='skill')return openSkills(u);if(o.v==='item')return openItems();return done({type:o.v})}
   if(m.lv==='skill')return done({type:'skill',id:o.v});
-  if(m.lv==='item')return NETK[o.v]?done({type:'catch',id:o.v}):openTarget(o.v);
+  if(m.lv==='item')return NETK[o.v]?done({type:'catch',id:o.v}):HEAL[o.v]&&HEAL[o.v].all?done({type:'item',id:o.v,target:null}):openTarget(o.v);
   if(m.lv==='target')return done({type:'item',id:m.item,target:o.v});
 }
 function battleKey(k){
@@ -2360,15 +2446,17 @@ async function act(u,a){
     if(Math.random()*100<ch){await bsay('成功逃走了！',900);BT.result='run'}else await bsay('沒能逃掉！',900);return}
   if(a.type==='catch'){
     const nid=a.id||'net',i=G.bag.findIndex(x=>x.id===nid);if(i<0)return;removeAt(i);
-    const d=DEX.find(x=>x.id===foe.key),rate=Math.min(.97,(.2+.72*(1-foe.hp/foe.max))*[0,1,.7,.4][d.r]*NETK[nid]);
+    const d=DEX.find(x=>x.id===foe.key),rate=Math.min(.97,(.2+.72*(1-foe.hp/foe.max))*[0,1,.7,.4,.22,.1][d.r]*NETK[nid]);
     await bsay(`${hero}丟出了${ITEMS[nid].name}！`,800);
     let k=0;for(;k<3;k++){if(Math.random()>Math.pow(rate,1/3))break;foe.shake=1;await bsay(['……','……！','……！！'][k],600)}
     if(k===3){await bsay(`成功捕捉了「${foe.name}」！`,1200);BT.result='catch'}
     else{foe.shake=1;await bsay(`「${foe.name}」掙脫了捕獸網！`,1000)}
     return}
   if(a.type==='item'){const i=G.bag.findIndex(x=>x.id===a.id),t=a.target;if(i<0)return;removeAt(i);
-    if(a.id==='potion'){const v=Math.min(200,t.max-t.hp);t.hp+=v;float(t,'+'+v,'#7ee08a');await bsay(`對${t.name}使用回復膠囊，HP 回復了 ${v}！`)}
-    else{const v=Math.min(100,t.mpMax-t.mp);t.mp+=v;float(t,'+'+v,'#5ff3ff');await bsay(`對${t.name}使用晶能電池，MP 回復了 ${v}！`)}
+    const Hh=HEAL[a.id]||{},tg=Hh.all?[BT.pc,BT.bs].filter(x=>x.hp>0):[t],parts=[];
+    await playFx(u,Hh.all?tg:t,Hh.hp?['heal','#3dff6e','#ffffff']:['mpfx','#1ff5ff','#ffffff'],.6);
+    for(const x of tg){if(Hh.hp){const v=Math.min(Hh.hp,x.max-x.hp);x.hp+=v;float(x,'+'+v,'#7ee08a');parts.push(`${x.name} HP +${v}`)}if(Hh.mp){const v=Math.min(Hh.mp,x.mpMax-x.mp);x.mp+=v;if(!Hh.hp)float(x,'+'+v,'#5ff3ff');parts.push(`${x.name} MP +${v}`)}}
+    await bsay(`使用了${ITEMS[a.id].name}！${parts.join('、')}`)
     return}
   if(a.type==='skill'&&SKILLS[a.id].eff&&SKILLS[a.id].eff!=='drain'&&SKILLS[a.id].eff!=='mercy'){
     const sk=SKILLS[a.id],e=sk.eff,al=[BT.pc,BT.bs].filter(x=>x.hp>0),p=skillPower(a.id,u.kind==='pc'?null:u.ref);u.mp-=sk.mp;u.lunge=1;
@@ -2403,11 +2491,12 @@ async function act(u,a){
 async function battle(o){
   if(!G.beasts.length||BT)return null;
   const b=G.beasts[0];mode='battle';held.length=0;
-  BT={opts:o,pc:mkPC(),bs:mkAlly(b),foe:mkFoe(o.key,o.lv),menu:null,floats:[],fx:[],result:null,wait:null};
+  BT={opts:o,pc:mkPC(),bs:mkAlly(b),foe:mkFoe(o.key,o.lv,o.shiny),menu:null,floats:[],fx:[],result:null,wait:null};
   see(o.key);
   for(let i=0;i<2;i++){flashA=.9;await pause(130)}
   await wipeTo(1,520);bEl.hidden=false;renderHud();setLog('');renderCmd();await wipeTo(0,420);
   await bsay(o.intro||`野生的「${BT.foe.name}」${GSYM[BT.foe.g]}（Lv.${BT.foe.lv}）跳了出來！`,1200);
+  if(BT.foe.shiny){G.shinySeen=(G.shinySeen||0)+1;for(let i=0;i<3;i++){flashA=.7;await pause(160)}await playFx(BT.foe,BT.foe,['ring','#fff04a','#ffffff'],.7);await bsay('✦ 牠的身體閃閃發光……是極為罕見的「異色」幻獸！',1600)}
   let res=null;
   outer:while(true){
     const order=[BT.pc,BT.bs,BT.foe].filter(u=>u.hp>0).map(u=>({u,r:u.spd+Math.random()*4})).sort((x,y)=>y.r-x.r).map(x=>x.u);
@@ -2425,7 +2514,7 @@ async function battle(o){
   let lvUp=0,pe=0;
   if(res==='win'||res==='catch'){
     // 人物與幻獸分開計算：各自用「對手等級 vs 自己等級」決定經驗
-    const fl=BT.foe.lv;pe=battleExp(G.char.lv,fl);const be=battleExp(b.lv,fl);
+    const fl=BT.foe.lv,bm=expBoost();pe=battleExp(G.char.lv,fl)*bm;const be=battleExp(b.lv,fl)*bm;if(bm>1)await bsay(`經驗卡生效中：獲得經驗 ×${bm}！`,900);
     const tag=(lv)=>{const d=fl-lv,k=expMul(lv,fl);return `Lv.${lv} vs Lv.${fl}${d>0?'・越級 +'+d:d<0?'・等級高 '+(-d):'・同等級'} ×${k.toFixed(2)}`};
     if(res==='win')await bsay('戰鬥勝利！',900);
     if(!o.practice){const cn=o.reward||(10+BT.foe.lv*5);G.money=(G.money||0)+cn;await bsay(`獲得了 ${cn} 晶幣。`,900)}
@@ -2437,13 +2526,14 @@ async function battle(o){
       for(const [lv,id] of learnset(b.key))if(lv>b.lv-lvUp&&lv<=b.lv){const r=beastLearn(b,id);if(!r)continue;
         await bsay(r.slot<0?`${BT.bs.name}學會了「${SKILLS[id].name}」！（技能槽滿了，先記在技能清單裡）`:r.old?`${BT.bs.name}忘記了「${SKILLS[r.old].name}」，學會了「${SKILLS[id].name}」！`:`${BT.bs.name}學會了新技能「${SKILLS[id].name}」！`,1500)}const gr=addGrowth(b,BT.foe.key,lvUp);const fd=DEX.find(x=>x.id===BT.foe.key);
       if(gr)await bsay(`打倒了${fd.el?fd.el+'屬性':({e:'元素',p:'精神',m:'機械'})[fd.sys[0]]+'系'}的幻獸，${BT.bs.name}的${GBK[gr[0]]}大幅成長、${GBK[gr[1]]}也成長了！`,1500)}
-    if(!o.practice&&Math.random()<.25&&addItem('potion'))await bsay('撿到了一顆「回復膠囊」！',1000);
+    if(!o.practice&&Math.random()<.25){const pi=BT.foe.lv>=40&&Math.random()<.4?'potion2':Math.random()<.35?'herb':'potion';if(addItem(pi))await bsay(`撿到了一顆「${ITEMS[pi].name}」！`,1000)}
+    if(!o.practice&&o.canCatch){const gi=dropGear(BT.foe);if(gi){flashA=.5;await bsay(`野生幻獸掉落了裝備「${ITEMS[gi].name}」！`,1400)}}
     if(!o.practice){const mt=dropMaterial();if(mt)await bsay(`撿到了進化素材「${mt}」！`,1000)}
   }else if(res==='lose')await bsay(o.practice?'練習對戰結束了。':'眼前一片漆黑……',1400);
-  const foeK=BT.foe.key,foeLv=BT.foe.lv,foeHp=BT.foe.hp;
+  const foeK=BT.foe.key,foeLv=BT.foe.lv,foeHp=BT.foe.hp,foeShiny=BT.foe.shiny;
   await fadeTo(1,400);bEl.hidden=true;BT=null;
   if(o.practice)healAll();
-  let caught=null;if(res==='catch'){if(autoOn){autoCaught++;const C=G.autoCfg||{};if(autoCaught>=(C.max||3))toast('自動捕捉',`已捕捉 ${autoCaught} 隻，之後只打不抓`)}G.flags.c1_catch=true;setTimeout(checkFree,1500);if(G.gd&&G.gd.task)G.gd.cat=(G.gd.cat||0)+1;const nb=makeBeast(foeK,foeLv);nb.hp=Math.max(1,foeHp);caught={nb,where:giveBeast(nb)};if(foeK==='bunny'&&G.q.keeper===1)G.q.keeper=2}
+  let caught=null;if(res==='catch'){if(autoOn){autoCaught++;const C=G.autoCfg||{};if(autoCaught>=(C.max||3))toast('自動捕捉',`已捕捉 ${autoCaught} 隻，之後只打不抓`)}G.flags.c1_catch=true;setTimeout(checkFree,1500);if(G.gd&&G.gd.task)G.gd.cat=(G.gd.cat||0)+1;const nb=makeBeast(foeK,foeLv);if(foeShiny)nb.shiny=true;nb.hp=Math.max(1,foeHp);caught={nb,where:giveBeast(nb)};if(foeK==='bunny'&&G.q.keeper===1)G.q.keeper=2}
   if(res==='win'||res==='catch'){gainExp(pe);if(G.char.hp<=0)G.char.hp=1;if(!G.flags.firstWin){G.flags.firstWin=true;setTimeout(()=>checkSide('firstbattle'),1200)}}
   if(res==='lose'&&!o.practice){
     if(autoOn)setAuto(false,'戰鬥失敗');
@@ -2463,12 +2553,14 @@ async function battle(o){
 }
 function tryEncounter(pool,lvr){
   if(encCD>0){encCD--;return false}
-  if(Math.random()>=.08)return false;
-  encCD=6;
+  if(Math.random()>=.13)return false;
+  encCD=4;
   let k,a,z;
   if(pool){const tot=pool.reduce((s,x)=>s+x[1],0);let v=Math.random()*tot;k=pool[pool.length-1][0];for(const [kk,w] of pool){if((v-=w)<=0){k=kk;break}}[a,z]=lvr}
   else{const P=[['raiju',1,3],['otter',1,3],['butterfly',2,4],['dove',1,3],['bunny',2,3],['moth',3,4],['rat',2,4]];[k,a,z]=P[Math.random()*P.length|0]}
-  battle({key:k,lv:a+(Math.random()*(z-a+1)|0),canRun:true,canCatch:true});return true;
+  const hd=DEX.find(x=>x.id===k),bump=hd&&hd.r>=5?10:hd&&hd.r>=4?5:0;if(bump){see(k);toast('隱藏幻獸','傳說中的「'+hd.name+'」出現了！','gold')}
+  const shiny=Math.random()<SHINY_RATE;if(shiny)toast('✦ 異色幻獸','草叢裡有東西在閃閃發光……！','gold');
+  battle({key:k,lv:Math.min(80,a+(Math.random()*(z-a+1)|0)+bump),canRun:true,canCatch:true,shiny});return true;
 }
 
 /* ================= 技能動畫 ================= */
@@ -3016,16 +3108,17 @@ const GIFT_CODES={CRYSTAL2026:{t:'1000 晶幣',f:()=>{G.money=(G.money||0)+1000}
 const DESIGNER_EMAIL='wlo1871375@gmail.com';
 const TENT_SECRET='CBE-tent-9Q2x-7f3k';
 const B32='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-function tentCheck(serial,name){let h=strHash('TENT|'+serial+'|'+name+'|'+TENT_SECRET);h=strHash(h+'#'+TENT_SECRET);let c='';for(let i=0;i<4;i++){c+=B32[h%32];h=Math.floor(h/32)}return c}
-function mailToDesigner(){const sub=encodeURIComponent('【晶獸紀元】申請原地帳篷兌換碼'),body=encodeURIComponent(`遊戲設計者您好：\n\n我想申請一組原地帳篷兌換碼。\n主角名稱：${hero}\n目前等級：Lv.${G.char.lv}\n\n我對遊戲的想法／建議（可不填）：\n\n\n謝謝！`);
+const CODE_TYPES={TENT:{item:'tent',name:'原地帳篷'},EXPA:{item:'expcard2',name:'雙倍經驗卡（2 小時）'},EXPB:{item:'expcard100',name:'百倍經驗卡（1 小時）'},RSET:{item:'resetcard',name:'點數重置卡'}};
+function tentCheck(serial,name,type){let h=strHash((type||'TENT')+'|'+serial+'|'+name+'|'+TENT_SECRET);h=strHash(h+'#'+TENT_SECRET);let c='';for(let i=0;i<4;i++){c+=B32[h%32];h=Math.floor(h/32)}return c}
+function mailToDesigner(){const sub=encodeURIComponent('【晶獸紀元】申請兌換碼'),body=encodeURIComponent(`遊戲設計者您好：\n\n我想申請兌換碼（請保留想要的）：\n・原地帳篷\n・雙倍經驗卡（2 小時）\n・百倍經驗卡（1 小時）\n・點數重置卡\n\n主角名稱：${hero}\n目前等級：Lv.${G.char.lv}\n\n我對遊戲的想法／建議（可不填）：\n\n\n謝謝！`);
   if(!DESIGNER_EMAIL){M.msg='遊戲設計者還沒有設定聯絡信箱。';return}location.href=`mailto:${DESIGNER_EMAIL}?subject=${sub}&body=${body}`}
 function redeemCode(raw){
   const c=String(raw||'').trim().toUpperCase().replace(/\s+/g,'');if(!c)return '請先輸入兌換碼。';
   G.usedCodes=G.usedCodes||[];if(G.usedCodes.includes(c))return '這組兌換碼已經使用過了。';
-  const m=c.match(/^TENT-([A-Z0-9]{4})-([A-Z0-9]{4})$/);
-  if(m){if(tentCheck(m[1],hero)!==m[2])return `這組帳篷兌換碼無效。兌換碼和主角名稱「${hero}」綁定，請確認號碼與名稱。`;
-    if(!addItem('tent'))return '背包滿了，整理一下再兌換。';G.usedCodes.push(c);return '兌換成功！獲得「原地帳篷」×1。'}
-  if(/^TENT-/.test(c))return '帳篷兌換碼格式不對，正確格式是 TENT-XXXX-XXXX。';
+  const m=c.match(/^(TENT|EXPA|EXPB|RSET)-([A-Z0-9]{4})-([A-Z0-9]{4})$/);
+  if(m){const T=CODE_TYPES[m[1]];if(tentCheck(m[2],hero,m[1])!==m[3])return `這組兌換碼無效。兌換碼和主角名稱「${hero}」綁定，請確認號碼與名稱。`;
+    if(!addItem(T.item))return '背包滿了，整理一下再兌換。';G.usedCodes.push(c);return `兌換成功！獲得「${ITEMS[T.item].name}」×1。到背包使用它吧。`}
+  if(/^(TENT|EXPA|EXPB|RSET)-/.test(c))return '兌換碼格式不對，正確格式是 XXXX-XXXX-XXXX（例如 TENT-AB12-CD34）。';
   const g=GIFT_CODES[c];if(!g)return '無效的兌換碼。';g.f();G.usedCodes.push(c);return `兌換成功！獲得 ${g.t}。`;
 }
 
@@ -3069,6 +3162,49 @@ const cartographer=npc(L_('#7a3e2b','#3f7fd1','#c98a4b',{cap:true}),20,9,'down',
 });
 MAPS.plaza.actors.push(cartographer);
 
+/* ================= 支線：乘騎幻獸・海洋之子 ================= */
+function toggleRide(fromMenu){
+  if(!bagN('saddle'))return '還沒有乘騎鞍。';
+  if(!G.beasts.length)return '沒有可以乘騎的夥伴。';
+  if(SURF!=null)return '正在海上，先回到陸地吧。';
+  if(G.flags.ride){delete G.flags.ride;toast('乘騎','從'+beastName(G.beasts[0])+'身上下來了');refreshHUD();return '從幻獸身上下來了。'}
+  G.flags.ride=true;refreshHUD();
+  if(INDOOR()){toast('乘騎','到戶外就會騎上'+beastName(G.beasts[0]));return '已經準備好鞍具。走到戶外就會騎上'+beastName(G.beasts[0])+'。'}
+  toast('乘騎','騎上了'+beastName(G.beasts[0])+'！移動速度 +300%','gold');return '騎上了'+beastName(G.beasts[0])+'！移動速度提高 300%。'}
+const isWaterBeast=b=>{const d=DEX.find(x=>x.id===b.key);return !!(d&&d.el==='水')};
+const waterKinds=()=>new Set([...G.beasts,...(G.box||[])].filter(isWaterBeast).map(b=>b.key)).size;
+async function seaCall(tx,ty){
+  if(!G.flags.seachild||SURF!=null||INDOOR())return false;
+  const ws=G.beasts.map((b,i)=>({b,i})).filter(o=>isWaterBeast(o.b)&&o.b.hp>0);
+  if(!ws.length){await say('你吹響了海之貝笛……','海浪輕輕拍著岸邊，但沒有夥伴回應。','（隊伍裡需要一隻 HP 不為 0 的水屬性幻獸。）');return true}
+  const k=await ask('海之貝笛','要乘著哪一隻夥伴出海？',[...ws.map(o=>beastName(o.b)+'　Lv.'+o.b.lv),'不出海']);if(k>=ws.length)return true;
+  SURF=ws[k].i;G.flags.surfing=true;await say('你吹響了海之貝笛——',`${beastName(ws[k].b)}躍入海中，讓你騎上了牠的背！`);
+  mode='play';startMove(player,player.dir,true);toast('海洋之子','在海上前進中（走回陸地就會上岸）','gold');return true}
+const SEA_LV={town:[20,26],village:[22,28],port:[26,32],sand:[30,36],coral:[46,52],volcano:[54,60],star:[62,68]};
+const SEA_POOL=[['otter',6],['mudfrog',3],['shark',4],['snake',3],['angler',4],['whale',2],['jelly',4],['frostfish',3],['icecray',3],['koi',.6],['bogcroc',2],
+  ['tidelion',.5],['steelcrab',.5],['crystalturtle',.5],['deepangler',.5],['abyssdragon',.15],['leviathan',.15],['voidwhale',.12]];
+const rideKnight=npc(L_('#c06848','#e0a040','#3b2b1e',{long:true}),10,8,'down',()=>taskQuest('騎士蕾雅','ride',{title:'乘騎幻獸',
+  intro:['我是風車鎮的幻獸騎士，蕾雅。','只要和夥伴心意相通，就能騎在牠背上奔馳——速度是走路的好幾倍喔！'],
+  ask:'帶一隻 Lv.25 以上、親密度 80 以上的幻獸來給我看看，我就把乘騎鞍送給你！',
+  hint:'讓一隻幻獸達到 Lv.25 以上、親密度 80 以上。親密度可以靠戰鬥、餵食晶果提升。',
+  prog:()=>{const b=G.beasts.slice().sort((x,y)=>((y.lv>=25)+(y.aff||0)/100)-((x.lv>=25)+(x.aff||0)/100))[0];return b?`目前最接近的是${beastName(b)}：Lv.${b.lv} / 25，親密度 ${b.aff||0} / 80。`:'你還沒有夥伴呢。'},
+  done:()=>G.beasts.some(b=>b.lv>=25&&(b.aff||0)>=80),
+  give:()=>{addItem('saddle');toast('獲得道具','乘騎鞍','gold')},
+  thanks:['你們的眼神一模一樣，真是好搭檔！','這個「乘騎鞍」送給你。在物品欄使用它，或按 Q 鍵／方向鍵中間的「騎」按鈕，就能騎上隊伍第一隻幻獸！'],
+  after:'騎著夥伴奔馳的感覺很棒吧？記得常常獎勵牠喔！'}));
+MAPS.windmill.actors.push(rideKnight);
+const seaChild=npc(L_('#1d3f8f','#5ff3ff','#48a8c8',{long:true}),3,12,'down',async()=>{
+  const N='海洋之子・汐';
+  if(qv('ride')<2&&qv('seachild')===0)return say([N,'……海在呼喚會乘騎的人。'],[N,'聽說風車鎮有一位騎士在教人乘騎幻獸，先去找她吧。']);
+  return taskQuest(N,'seachild',{title:'海洋之子',
+    intro:['我從小在海上長大，大家叫我「海洋之子」。','只要和水屬性的夥伴心意相通，就能乘著牠在海上自由前進。'],
+    ask:'收集 3 種不同的水屬性幻獸（隊伍或保管箱都算），我就把海之貝笛送給你！',
+    hint:'收集 3 種不同的水屬性幻獸，再回港灣鎮碼頭找汐。泡泡獺、泥沼蛙、沼澤鱷都是水屬性。',
+    prog:()=>`目前有 ${Math.min(3,waterKinds())} / 3 種水屬性幻獸。`,done:()=>waterKinds()>=3,
+    give:()=>{addItem('conch');G.flags.seachild=true},
+    thanks:['海浪告訴我，你是值得信任的人。','這是「海之貝笛」。面向大海按 A，水屬性的夥伴就會載你出海。','海上也住著只有在那裡才見得到的幻獸喔……'],
+    after:'外海深處，好像住著一條很大很大的海龍……'})});
+MAPS.port.actors.push(seaChild);
 /* ================= 室內：救護中心・商店・孵育所 ================= */
 const ROOMDEF={
   clinic:{name:'救護中心',en:'CLINIC',rows:["###########","#B..._...B#","#B..RRR..B#","#.........#","#P.......P#","#.........#","#####D#####"],pal:['#e8f4f0','#d0e8e0','#f8d0d8']},
@@ -3124,13 +3260,19 @@ async function hatch(i){
 const SV={kind:null,tab:0,sel:0,msg:'',pick:[]};
 const svEl=$('#svc');
 const NETK={net:1,net2:1.6,net3:2.5};
-const stockHere=()=>{const o=ROOM?ROOM.owner:MAP.id;return MAPS[o]&&MAPS[o].gen?['net','net2','net3',...STOCK.slice(1)]:(o==='village'||o==='port')?['net','net2',...STOCK.slice(1)]:STOCK};
+const MEDS={plaza:['herb','potion','battery'],town:['herb','potion','battery'],village:['herb','potion','potion2','battery'],port:['potion','potion2','battery','battery2','spray'],
+  flower:['herb','potion','potion2','battery','spray'],windmill:['potion','potion2','battery','battery2'],mistvale:['potion','potion2','battery2','spray'],
+  crystal:['potion2','potion3','battery2','spray'],snow:['potion2','potion3','battery','battery2'],sand:['potion','potion2','potion3','battery2','spray'],
+  coral:['potion2','potion3','battery2','spray','elixir'],volcano:['potion2','potion3','battery2','elixir'],star:['potion3','battery2','spray','elixir']};
+const stockHere=()=>{const o=ROOM?ROOM.owner:MAP.id,fruits=STOCK.slice(3),meds=MEDS[o]||['potion','battery'];return [...(MAPS[o]&&MAPS[o].gen?['net','net2','net3']:(o==='village'||o==='port')?['net','net2']:['net']),...meds,...fruits]};
 const STOCK=['net','potion','battery',MAT_ID['辛辣晶果'],MAT_ID['蜜糖晶果'],MAT_ID['薄荷晶果'],MAT_ID['苦澀晶果']];
+const HEAL={herb:{hp:100},potion:{hp:200},potion2:{hp:500},potion3:{hp:99999},battery:{mp:100},battery2:{mp:250},spray:{hp:300,all:1},elixir:{hp:99999,mp:99999}};
+const hpMeds=()=>Object.keys(HEAL).filter(k=>HEAL[k].hp&&!HEAL[k].all).reduce((n,k)=>n+bagN(k),0);
 const sellPrice=id=>{const it=ITEMS[id];return it.type==='treasure'?it.price:Math.floor((it.price||40)/2)};
 const sellable=()=>G.bag.map((x,i)=>({x,i})).filter(o=>{const it=ITEMS[o.x.id];return it.type!=='key'&&it.type!=='quest'&&!it.noSell});
 function svRows(){
-  if(SV.kind==='gear'){const OW=MAPS[ROOM?ROOM.owner:MAP.id]||MAP,tiers=OW.gen?[2,3]:OW.id==='port'?[2,3]:OW.id==='village'?[1,2]:[1,2,3];
-    return GEAR_SHOP.filter(g=>tiers.includes(g[7])).map(g=>({id:g[0],label:`${g[1]}（${SLOTS.find(x=>x[0]===g[2])[1]}）`,note:`${g[6]} 晶幣`}))}
+  if(SV.kind==='gear'){const OW=MAPS[ROOM?ROOM.owner:MAP.id]||MAP,isl=(TOWNS.find(t=>t.id===OW.id)||{}).island,tiers=OW.gen?(isl?[3]:[2]):OW.id==='port'?[2,3]:OW.id==='village'?[1,2]:[1,2,3];
+    return [...(TOWN_GEAR[OW.id]||[]).map(id=>({id,label:`★${ITEMS[id].name}（${SLOTS.find(x=>x[0]===ITEMS[id].slot)[1]}）`,note:`${ITEMS[id].price} 晶幣`})),...GEAR_SHOP.filter(g=>tiers.includes(g[7])).map(g=>({id:g[0],label:`${g[1]}（${SLOTS.find(x=>x[0]===g[2])[1]}）`,note:`${g[6]} 晶幣`}))]}
   if(SV.kind==='shop')return SV.tab===0?stockHere().map(id=>({id,label:ITEMS[id].name,note:`${ITEMS[id].price} 晶幣`})):sellable().map(o=>({i:o.i,id:o.x.id,label:`${ITEMS[o.x.id].name} ×${o.x.n}`,note:`賣 ${sellPrice(o.x.id)} 晶幣`}));
   return [...G.beasts.map((b,i)=>({i,label:`${SV.pick.includes(i)?'■':'□'} ${beastName(b)} ${GSYM[b.g]||''}`,note:`Lv.${b.lv}`})),{act:'go',label:'▶ 開始孵育',note:''}];
 }
@@ -3213,6 +3355,7 @@ function toast(label,text,kind){
   $('#toastHost').append(el);setTimeout(()=>el.remove(),2900);
 }
 function refreshHUD(){
+  {const rb=$('#rideBtn');if(rb){rb.hidden=!(G&&G.bag&&G.bag.some(x=>x.id==='saddle'));rb.classList.toggle('on',!!(G&&G.flags&&G.flags.ride))}}
   const q=QUESTS[0],cur=q.steps.find(s=>!G.flags[s[1]]);
   $('#quest').textContent=cur?cur[0]:G.flags.c5_done?`全章完成・結局「${G.ending||''}」`:'前往下一個目標';
   $('#hud').hidden=!G.flags.woke;$('#selHint').hidden=true;
@@ -3433,6 +3576,7 @@ async function interact(){
   if(npc){face(npc,player);await npc.talk()}
   else{
     const ch=tileAt(MAP,tx,ty);
+    if(ch==='w'&&!MAP.maze&&MAP.id!=='lab'&&G.flags.seachild&&SURF==null&&await seaCall(tx,ty)){if(mode==='busy')mode='play';return}
     if(MAP.id==='library'&&ch==='B')await readShelf(SHELF[tx]);
     else if(MAP.id==='lab'&&ch==='P')await podLook(tx,ty);
     else if(MAP.id==='lab'&&ch==='X')await crystalScene();
@@ -3507,6 +3651,7 @@ function onArrive(){
   if(mode!=='play')return;markVisited();
   if((G.eggs||[]).length){for(const e of G.eggs)e.steps=Math.max(0,e.steps-1);const hi=G.eggs.findIndex(e=>e.steps<=0);if(hi>=0){hatch(hi);return}}
   pickDrop();
+  if(SURF!=null&&tileAt(MAP,player.x,player.y)!=='w'){SURF=null;delete G.flags.surfing;toast('上岸','回到陸地了')}
   const ch=tileAt(MAP,player.x,player.y),id=MAP.id,x=player.x;
   if(id==='home'&&ch==='D')goOutside();
   else if(id==='town'&&ch==='d')goInside();
@@ -3526,6 +3671,7 @@ function onArrive(){
   else if(MAP.maze&&mzAt('ent'))mazeBack();
   else if(MAP.maze&&mzAt('ex'))mazeFwd();
   else if(MAP.maze&&ch==='G'&&G.beasts.length&&tryEncounter(MAP.pool,MAP.lv)){}
+  else if(SURF!=null&&ch==='w'&&G.beasts.length&&tryEncounter(SEA_POOL,SEA_LV[MAP.id]||[30,36])){}
   else if(MAP.room&&ch==='D')leaveRoom();
   else if(id==='lab'&&ch==='D')leaveLab();
   else if(id==='town'&&ch==='v')enterLibrary('town');
@@ -3537,9 +3683,11 @@ function onArrive(){
 }
 
 
-/* ================= 自動打怪（Q 鍵 / AUTO 按鈕） ================= */
+/* ================= 自動打怪（E 鍵 / AUTO 按鈕） ================= */
 let autoOn=false,autoT=0,autoCaught=0,autoMercy=0,autoBlock=0;
-function autoWantCatch(){const C=G.autoCfg||{};if(!C.star||!BT||!BT.opts.canCatch||autoCaught>=(C.max||3))return false;const d=DEX.find(x=>x.id===BT.foe.key);return d&&d.r>=C.star&&(bagN('net')+bagN('net2')+bagN('net3'))>0}
+function autoWantCatch(){const C=G.autoCfg||{};if(!BT||!BT.opts.canCatch||(!C.star&&!BT.foe.shiny)||(autoCaught>=(C.max||3)&&!BT.foe.shiny))return false;const d=DEX.find(x=>x.id===BT.foe.key);return d&&(d.r>=C.star||BT.foe.shiny)&&(bagN('net')+bagN('net2')+bagN('net3'))>0}
+const boostTag=document.createElement('div');boostTag.className='autotag boosttag';boostTag.hidden=true;let boostT=0;
+function updBoost(){const b=mode!=='title'&&G&&boostLeft();if(!b){boostTag.hidden=true;return}if(!boostTag.parentNode)$('#screen').append(boostTag);boostTag.hidden=false;boostTag.textContent=`EXP ×${b[0]}　${fmtTime(b[1])}`}
 const autoTag=document.createElement('div');autoTag.className='autotag';autoTag.textContent='AUTO 自動打怪中';autoTag.hidden=true;
 function hasGrass(){return (MAP.maze||MAP.id==='town')&&MAP.rows.some(r=>r.includes('G'))}
 function setAuto(v,why){autoOn=v;$('#autoBtn').classList.toggle('on',v);autoTag.hidden=!v;if(!autoTag.parentNode)$('#screen').append(autoTag);if(why)toast(v?'自動打怪':'自動打怪停止',why,v?'gold':undefined)}
@@ -3548,10 +3696,10 @@ async function toggleAuto(){
   if(!G.flags.done||!G.beasts.length)return toast('自動打怪','轉職並擁有幻獸後才能使用');
   if(!hasGrass())return toast('自動打怪','這張地圖沒有野生幻獸出沒的草叢');
   if(mode!=='play'||D)return;
-  const C=G.autoCfg||(G.autoCfg={hp:40,tent:false,star:0,max:3}),HPS=[0,30,40,50,70],STARS=[0,1,2,3],MAXS=[1,3,5,10];if(C.star==null)C.star=0;if(!C.max)C.max=3;mode='busy';held.length=0;
+  const C=G.autoCfg||(G.autoCfg={hp:40,tent:false,star:0,max:3}),HPS=[0,30,40,50,70],STARS=[0,1,2,3,4,5],MAXS=[1,3,5,10];if(C.star==null)C.star=0;if(!C.max)C.max=3;mode='busy';held.length=0;
   const nets=()=>bagN('net')+bagN('net2')+bagN('net3');
   while(true){
-    const k=await ask('自動打怪設定',`回復膠囊 ${bagN('potion')}・原地帳篷 ${bagN('tent')}・捕獸網 ${nets()}`,['開始掛機',`吃血包時機：${C.hp?'HP 低於 '+C.hp+'%':'不吃血包'}`,`HP 不足時用原地帳篷：${C.tent?'開啟':'關閉'}（持有 ${bagN('tent')}）`,`自動捕捉：${C.star?'★'.repeat(C.star)+' 以上的幻獸':'關閉'}`,`最多捕捉：${C.max} 隻後停止捕捉`,`視窗縮小時：${bgPref==='run'?'背景繼續執行':'暫停遊戲'}`,'取消']);
+    const k=await ask('自動打怪設定',`回復藥 ${hpMeds()}・原地帳篷 ${bagN('tent')}・捕獸網 ${nets()}`,['開始掛機',`吃血包時機：${C.hp?'HP 低於 '+C.hp+'%':'不吃血包'}`,`HP 不足時用原地帳篷：${C.tent?'開啟':'關閉'}（持有 ${bagN('tent')}）`,`自動捕捉：${C.star?'★'.repeat(C.star)+' 以上的幻獸':'關閉'}`,`最多捕捉：${C.max} 隻後停止捕捉`,`視窗縮小時：${bgPref==='run'?'背景繼續執行':'暫停遊戲'}`,'取消']);
     if(k===1){C.hp=HPS[(HPS.indexOf(C.hp)+1)%HPS.length];continue}
     if(k===2){C.tent=!C.tent;continue}
     if(k===3){C.star=STARS[(STARS.indexOf(C.star)+1)%STARS.length];continue}
@@ -3574,8 +3722,9 @@ function autoStep(){
 }
 function autoHeal(){
   const C=G.autoCfg||{hp:40,tent:false},b=G.beasts[0];pcCur();bCur(b);const st=bStats(b),pr=G.char.hp/maxHP(),br=b.hp/st.hp,low=Math.min(pr,br),thr=C.hp/100;
-  const i=G.bag.findIndex(x=>x.id==='potion');
-  if(thr>0&&low<thr&&i>=0){removeAt(i);if(pr<br)G.char.hp=Math.min(maxHP(),G.char.hp+200);else b.hp=Math.min(st.hp,b.hp+200);toast('自動打怪','使用了回復膠囊');return true}
+  const miss=pr<br?maxHP()-G.char.hp:st.hp-b.hp,hm=Object.keys(HEAL).filter(k=>HEAL[k].hp&&!HEAL[k].all&&bagN(k)>0).sort((x,y)=>HEAL[x].hp-HEAL[y].hp),pk=hm.find(k=>HEAL[k].hp>=miss*.7)||hm[hm.length-1];
+  const i=pk?G.bag.findIndex(x=>x.id===pk):-1;
+  if(thr>0&&low<thr&&i>=0){removeAt(i);const v=HEAL[pk].hp;if(pr<br)G.char.hp=Math.min(maxHP(),G.char.hp+v);else b.hp=Math.min(st.hp,b.hp+v);toast('自動打怪','使用了'+ITEMS[pk].name);return true}
   if(low<Math.max(thr,.3)){
     if(C.tent){
       const ti=G.bag.findIndex(x=>x.id==='tent');if(ti<0){setAuto(false,'沒有「原地帳篷」了（寄信給遊戲設計者索取或提出想法，就能拿到兌換碼，到角色欄兌換）');return false}
@@ -3612,6 +3761,7 @@ function autoTick(dt){
   if(!autoStep())setAuto(false,'找不到可以走的草叢');
 }
 $('#autoBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(mode!=='title')toggleAuto()});
+$('#rideBtn').addEventListener('pointerdown',e=>{e.preventDefault();if(mode==='play'){const m=toggleRide();if(m&&!/騎上|下來/.test(m))toast('乘騎',m)}});
 
 /* ================= save storage ================= */
 let cloud=null,lastSave=null;
@@ -3651,6 +3801,7 @@ function applySave(s){
   D=null;dlg.hidden=true;$('#card').hidden=true;$('#title').hidden=true;
   M.open=false;$('#menu').hidden=true;held.length=0;
   for(const b of [...G.beasts,...(G.box||[])])beastCatchUp(b);
+  SURF=null;if(G.flags.surfing&&tileAt(MAP,player.x,player.y)==='w'){const i=G.beasts.findIndex(isWaterBeast);SURF=i>=0?i:0}else delete G.flags.surfing;
   applyWorld();refreshHUD();markVisited();mode='play';
 }
 const fmtTime=s=>{s=Math.floor(s||0);return[s/3600|0,(s/60|0)%60,s%60].map(v=>String(v).padStart(2,'0')).join(':')};
@@ -3725,20 +3876,21 @@ function evoHtml(d){
   return h+(read||ev.some(br=>br.hidden&&brVisible(d.id,br))?'<span class="k">點選進化後的型態，或在圖鑑按 A，可以播放進化動畫。</span>':'');
 }
 function paneDex(){
-  const d=DEX[M.sel]||DEX[0],seen=dexSeen(d.id),no=String(DEX.indexOf(d)+1).padStart(2,'0');
+  const d0=DEX[M.sel]||DEX[0],seen=dexSeen(d0.id),no=String(DEX.indexOf(d0)+1).padStart(2,'0');
+  const d=d0.hidden&&!seen?Object.assign({},d0,{name:'？？？',hab:'？？？',role:'？？？',sk:'？？？',desc:'傳說中的隱藏幻獸。目擊情報極少，只知道牠會在某個地方悄悄出現……'}):d0;
   const chips=[...d.sys].map(k=>`<span class="sys ${k}">${SYSN[k]}</span>`).join('')+`<span class="sys x">${dexKind(d)}</span>`;
   const SN=['HP','MP','攻擊','防禦','速度'];
   const bars=d.st.map((v,i)=>`<span class="k">${SN[i]}</span><i><b style="width:${Math.min(100,v/120*100)}%"></b></i><span>${v}</span>`).join('');
   const counts={1:0,2:0,3:0};DEX.forEach(x=>counts[x.sys.length]++);
-  const cells=DEX.map((x,i)=>`<button class="dexcell${on(i)}${dexSeen(x.id)?'':' unseen'}" data-sel="${i}" aria-label="${x.name}"><span class="no">${i+1}</span><img alt="" src="${dexURL(x)}"></button>`).join('');
+  const cells=DEX.map((x,i)=>`<button class="dexcell${on(i)}${dexSeen(x.id)?'':' unseen'}${x.hidden&&!dexSeen(x.id)?' hid':''}" data-sel="${i}" aria-label="${x.name}"><span class="no">${i+1}</span><img alt="" src="${dexURL(x)}"></button>`).join('');
   return `<h3>幻獸圖鑑<small>已遇見 ${(G.seen||[]).length} / ${DEX.length}</small></h3>
-  <div class="box"><div class="dexhero"><img class="big" alt="" src="${dexURL(d)}"><div class="info">
+  <div class="box"><div class="dexhero"><img class="big" alt="" src="${dexURL(d0)}"${d0.hidden&&!seen?' style="filter:brightness(0) opacity(.75);background:transparent"':''}><div class="info">
     <span>No.${no}　${d.name}　<span class="star">${'★'.repeat(d.r)}</span>${seen?'':'　<span class="none">未遇見</span>'}</span>
     <span>${chips}${d.el?`<span class="k">屬性：${d.el}</span>`:''}</span>
-    <span class="k">棲地：${d.hab}　用途：${d.role}</span></div></div>
+    <span class="k">棲地：${d.hab}　用途：${d.role}</span>${[...G.beasts,...(G.box||[])].some(b=>b.key===d0.id&&b.shiny)?`<span class="k">✦ 已擁有異色個體 <img alt="" src="${dexURL(shinyOf(d0))}" style="width:2.4em;height:2.4em;vertical-align:middle;image-rendering:pixelated"></span>`:''}</div></div>
     <div class="bars">${bars}</div>
     <span><span class="k">招牌技能</span>　${d.sk}</span><span class="k">${d.desc}</span></div>
-  <div class="box"><span class="k">進化鍊（${(EVO[d.id]||[]).filter(br=>!br.hidden||brVisible(d.id,br)).length} 條）</span>${evoHtml(d)}</div>
+  <div class="box"><span class="k">進化鍊（${(EVO[d.id]||[]).filter(br=>!br.hidden||brVisible(d.id,br)).length} 條）</span>${d0.hidden&&!(EVO[d.id]||[]).length?'<span class="k">傳說中的幻獸不會進化，牠已經是最終的姿態。</span>':evoHtml(d0)}</div>
   <span class="k">單系 ${counts[1]}・雙系 ${counts[2]}・三系 ${counts[3]}</span>
   <div class="dexgrid">${cells}</div>`;
 }
@@ -3769,7 +3921,7 @@ function paneChar(){
     <div class="stat"><span class="k">爆擊率</span><span>${h0.crit}%${d('crit','%')}</span></div>
     <div class="stat"><span class="k">閃避率</span><span>${h0.eva}%${d('eva','%')}</span></div></div>`})()}
   <div class="box"><span class="k">能力值　${c.points?`剩餘點數 <span class="up">${left}</span>（選擇後按 ▶／A 加點，◀ 減點）`:'每次升級可自由分配 5 點'}</span><ul class="list">${rows}</ul>${acts}</div>
-  <div class="box"><span class="k">兌換碼</span><div class="redeem"><input id="redeemIn" maxlength="20" placeholder="輸入兌換碼" autocomplete="off" spellcheck="false"><button class="btn${on(G.char.points>0?6:0)}" data-act="redeem">兌換</button></div><span class="k">原地帳篷：寄電子郵件給遊戲設計者索取，或分享你對遊戲的想法、建議，信中寫上主角名稱「${esc(hero)}」，就能收到一次性的帳篷兌換碼（格式 TENT-XXXX-XXXX，只限這個名稱使用）。${DESIGNER_EMAIL?'聯絡信箱：'+esc(DESIGNER_EMAIL):''}</span>${DESIGNER_EMAIL?'<div class="act"><button class="btn alt" data-act="mail">寫信給設計者</button></div>':''}</div>
+  <div class="box"><span class="k">兌換碼</span><div class="redeem"><input id="redeemIn" maxlength="20" placeholder="輸入兌換碼" autocomplete="off" spellcheck="false"><button class="btn${on(G.char.points>0?6:0)}" data-act="redeem">兌換</button></div><span class="k">原地帳篷、雙倍經驗卡（2 小時）、百倍經驗卡（1 小時）、點數重置卡：寄電子郵件給遊戲設計者索取，或分享你對遊戲的想法、建議，信中寫上主角名稱「${esc(hero)}」，就能收到一次性兌換碼（只限這個名稱使用）。${DESIGNER_EMAIL?'聯絡信箱：'+esc(DESIGNER_EMAIL):''}</span>${DESIGNER_EMAIL?'<div class="act"><button class="btn alt" data-act="mail">寫信給設計者</button></div>':''}</div>
   <div class="msg">${esc(M.msg)}</div>`;
 }
 function doRedeem(){const el=$('#redeemIn');const v=el?el.value:'';if(!v){if(el)el.focus();M.msg='請輸入兌換碼後按 Enter 或「兌換」。';return}M.msg=redeemCode(v);renderMenu()}
@@ -3857,6 +4009,11 @@ function unequip(slot){
   const old=G.equip[slot];G.equip[slot]=null;addItem(old);M.msg=`卸下了 ${ITEMS[old].name}。`;
 }
 const bagView=()=>G.bag.map((x,i)=>({x,i})).filter(o=>bagCat(o.x.id)===(M.btab||0));
+function expBoost(){const B=G.boosts||{},t=G.time||0;return (B.x100||0)>t?100:(B.x2||0)>t?2:1}
+function boostLeft(){const B=G.boosts||{},t=G.time||0;const k=(B.x100||0)>t?'x100':(B.x2||0)>t?'x2':null;return k?[k==='x100'?100:2,B[k]-t]:null}
+function resetPoints(){const c=G.char,J=G.job&&JOB_PROF[G.job],base={ele:5,psy:5,mec:5,luk:5};
+  if(J){for(const [k,v] of Object.entries(J.start))base[k]+=v;for(const [k,v] of Object.entries(J.grow))base[k]+=v*(c.lv-1)}
+  let back=0;for(const k of ATTRS){const d=Math.max(0,c.attr[k]-base[k]);back+=d;c.attr[k]-=d}c.points+=back;return back}
 function useItem(vi){
   const o=bagView()[vi],i=o?o.i:-1,s=o&&o.x;if(!s){M.msg='';return}
   const it=ITEMS[s.id];
@@ -3869,12 +4026,17 @@ function useItem(vi){
     M.msg=`${beastName(b)}${it.name.includes('晶核')?'鑲嵌了':'吃下了'}「${it.name}」（累計 ${b.fed[it.name]}），親密度上升了。`;
     if(readyStage(b)&&readyStage(b).st&&b.noEvo!==`${b.lv}:${readyStage(b).bi}:${readyStage(b).si}`){closeMenu();setTimeout(()=>{mode='busy';tryEvolve(b).then(()=>{mode='play'})},300)}
     return}
-  if(s.id==='potion'||s.id==='battery'){
-    const hpK=s.id==='potion',amt=hpK?200:100,c=pcCur(),cand=[{n:hero,o:c,max:hpK?maxHP():maxMP()}];
-    for(const b of G.beasts){bCur(b);const st=bStats(b);cand.push({n:beastName(b),o:b,max:hpK?st.hp:st.mp})}
-    const k=hpK?'hp':'mp',t=cand.find(x=>x.o[k]<x.max);
-    if(!t){M.msg=hpK?'大家的 HP 都是滿的，先留著吧。':'大家的 MP 都是滿的，先留著吧。';return}
-    const v=Math.min(amt,t.max-t.o[k]);t.o[k]+=v;removeAt(i);M.msg=`${t.n}的 ${hpK?'HP':'MP'} 回復了 ${v}。`;return}
+  if(s.id==='saddle'){M.msg=toggleRide(true);return}
+  if(s.id==='expcard2'||s.id==='expcard100'){const k=s.id==='expcard2'?'x2':'x100',dur=k==='x2'?7200:3600,B=G.boosts=G.boosts||{},t=G.time||0;
+    B[k]=Math.max(B[k]||0,t)+dur;removeAt(i);M.msg=`${it.name}生效！${k==='x2'?'2':'1'} 小時內（遊戲時間）戰鬥經驗 ×${k==='x2'?2:100}。剩餘 ${fmtTime(B[k]-t)}。`;toast('經驗卡',`戰鬥經驗 ×${k==='x2'?2:100}`,'gold');return}
+  if(s.id==='resetcard'){const n=resetPoints();if(!n){M.msg='目前沒有分配過的點數，先留著吧。';return}removeAt(i);M.msg=`退回了 ${n} 點升級點數！到角色欄重新分配吧。`;return}
+  if(HEAL[s.id]){
+    const H=HEAL[s.id],c=pcCur(),cand=[{n:hero,o:c,hp:maxHP(),mp:maxMP()}];
+    for(const b of G.beasts){bCur(b);const st=bStats(b);cand.push({n:beastName(b),o:b,hp:st.hp,mp:st.mp})}
+    const need=x=>(H.hp&&x.o.hp<x.hp)||(H.mp&&x.o.mp<x.mp),tg=H.all?cand.filter(need):[cand.find(need)].filter(Boolean);
+    if(!tg.length){M.msg=H.hp?'大家的 HP 都是滿的，先留著吧。':'大家的 MP 都是滿的，先留著吧。';return}
+    const parts=[];for(const t of tg){if(H.hp){const v=Math.min(H.hp,t.hp-t.o.hp);t.o.hp+=v;if(v)parts.push(`${t.n} HP +${v}`)}if(H.mp){const v=Math.min(H.mp,t.mp-t.o.mp);t.o.mp+=v;if(v)parts.push(`${t.n} MP +${v}`)}}
+    removeAt(i);M.msg=`使用了${it.name}：${parts.join('、')}。`;return}
   M.msg='這個物品現在不能使用。';
 }
 async function doSave(){
@@ -3937,17 +4099,18 @@ async function importCode(code){
 function sanitize(s){
   if(!s||s.v!==1||!s.G||!MAPS[s.map])return null;
   const m=MAPS[s.map],x=s.x|0,y=s.y|0;
-  if(x<0||y<0||x>=m.w||y>=m.h||m.solid.includes(m.rows[y][x]))return null;
+  if(x<0||y<0||x>=m.w||y>=m.h||(m.solid.includes(m.rows[y][x])&&!(m.rows[y][x]==='w'&&s.G.flags&&s.G.flags.surfing)))return null;
   const src=s.G,g=newGame();
   g.bag=(Array.isArray(src.bag)?src.bag:[]).filter(b=>b&&ITEMS[b.id]).slice(0,BAG_MAX*3).map(b=>({id:b.id,n:Math.max(1,Math.min(99,b.n|0))}));
   for(const [k] of SLOTS){const id=src.equip&&src.equip[k];g.equip[k]=id&&ITEMS[id]&&ITEMS[id].slot===k?id:null}
   g.flags={};for(const k in (src.flags||{}))if(/^[a-z0-9_]+$/.test(k)&&src.flags[k]===true)g.flags[k]=true;
   g.ch=Math.max(0,Math.min(5,src.ch|0));if(g.flags.done&&!g.ch)g.ch=1;g.route=['guard','black','observer'].includes(src.route)?src.route:null;
   g.mem=(Array.isArray(src.mem)?src.mem:[]).filter((k,i,a)=>['forest','canyon','swamp'].includes(k)&&a.indexOf(k)===i);g.ending=typeof src.ending==='string'?src.ending.slice(0,20):'';
+  g.boosts={};for(const k of ['x2','x100'])if(src.boosts&&Number.isFinite(src.boosts[k]))g.boosts[k]=Math.max(0,src.boosts[k]);
   const sc=src.char||{};g.char={lv:Math.max(1,Math.min(99,sc.lv|0||1)),exp:Math.max(0,sc.exp|0),points:Math.max(0,Math.min(495,sc.points|0)),attr:{}};if(Number.isFinite(sc.hp))g.char.hp=Math.max(1,sc.hp|0);if(Number.isFinite(sc.mp))g.char.mp=Math.max(0,sc.mp|0);
   for(const k of ATTRS)g.char.attr[k]=Math.max(5,Math.min(999,(sc.attr&&sc.attr[k])|0||5));
   g.job=JOBS[src.job]?src.job:null;
-  const fixB=b=>({g:b.g==='m'||b.g==='f'?b.g:rndG(),key:b.key,lv:Math.max(1,Math.min(99,b.lv|0||1)),exp:Math.max(0,b.exp|0),hp:Number.isFinite(b.hp)?Math.max(0,b.hp|0):null,wins:Math.max(0,b.wins|0),aff:Math.max(0,Math.min(100,b.aff|0)),fed:Object.fromEntries(Object.entries(b.fed&&typeof b.fed==='object'?b.fed:{}).filter(([k,v])=>MAT_ID[k]&&Number.isFinite(v)).map(([k,v])=>[k,Math.max(0,v|0)])),form:Array.isArray(b.form)&&EVO[b.key]&&EVO[b.key][b.form[0]|0]&&EVO[b.key][b.form[0]|0].s[b.form[1]|0]?[b.form[0]|0,b.form[1]|0]:null,mp:Number.isFinite(b.mp)?Math.max(0,b.mp|0):null,skills:[0,1,2,3].map(i=>Array.isArray(b.skills)&&SKILLS[b.skills[i]]?b.skills[i]:null),known:(Array.isArray(b.known)?b.known:[]).filter(id=>SKILLS[id]),gb:(()=>{const o={};for(const k of ['hp','atk','mat','def','spd'])o[k]=Math.max(0,Math.min(999,(b.gb&&b.gb[k])|0));return o})()});
+  const fixB=b=>({g:b.g==='m'||b.g==='f'?b.g:rndG(),key:b.key,lv:Math.max(1,Math.min(99,b.lv|0||1)),exp:Math.max(0,b.exp|0),shiny:b.shiny===true||undefined,hp:Number.isFinite(b.hp)?Math.max(0,b.hp|0):null,wins:Math.max(0,b.wins|0),aff:Math.max(0,Math.min(100,b.aff|0)),fed:Object.fromEntries(Object.entries(b.fed&&typeof b.fed==='object'?b.fed:{}).filter(([k,v])=>MAT_ID[k]&&Number.isFinite(v)).map(([k,v])=>[k,Math.max(0,v|0)])),form:Array.isArray(b.form)&&EVO[b.key]&&EVO[b.key][b.form[0]|0]&&EVO[b.key][b.form[0]|0].s[b.form[1]|0]?[b.form[0]|0,b.form[1]|0]:null,mp:Number.isFinite(b.mp)?Math.max(0,b.mp|0):null,skills:[0,1,2,3].map(i=>Array.isArray(b.skills)&&SKILLS[b.skills[i]]?b.skills[i]:null),known:(Array.isArray(b.known)?b.known:[]).filter(id=>SKILLS[id]),gb:(()=>{const o={};for(const k of ['hp','atk','mat','def','spd'])o[k]=Math.max(0,Math.min(999,(b.gb&&b.gb[k])|0));return o})()});
   const okB=b=>b&&BEASTS[b.key];
   g.beasts=(Array.isArray(src.beasts)?src.beasts:[]).filter(okB).slice(0,6).map(fixB);
   g.box=(Array.isArray(src.box)?src.box:[]).filter(okB).slice(0,200).map(fixB);
@@ -4113,7 +4276,8 @@ addEventListener('keydown',e=>{
     if(!reading&&(AK.includes(e.key)||e.key==='Enter')){e.preventDefault();start()}
     return;
   }
-  if((e.key==='q'||e.key==='Q')&&!e.repeat){e.preventDefault();toggleAuto();return}
+  if((e.key==='e'||e.key==='E')&&!e.repeat){e.preventDefault();toggleAuto();return}
+  if((e.key==='q'||e.key==='Q')&&!e.repeat&&mode==='play'){e.preventDefault();const m=toggleRide();if(m&&!/騎上|下來/.test(m))toast('乘騎',m);return}
   const dir=KEYS[e.key];
   if(D&&D.ask&&dir){e.preventDefault();askMove(dir);return}
   if(mode==='svc'){e.preventDefault();if(e.repeat&&!dir)return;if(dir)svKey(dir);else if(AK.includes(e.key))svKey('A');else if(BK.includes(e.key))svKey('B');return}
@@ -4194,6 +4358,7 @@ function loop(now){step(now);requestAnimationFrame(loop)}
 function step(now){
   const dt=Math.min(.05,(now-last)/1000);last=now;T+=dt;
   if(mode!=='title')G.time+=dt;
+  if((boostT+=dt)>.5){boostT=0;updBoost()}
   if(flashA>0)flashA=Math.max(0,flashA-dt*.7);
   if(EV)EV.t+=dt;
   if(wipeJob){wipeJob.t+=dt*1000;const k=Math.min(1,wipeJob.t/wipeJob.ms);wipeA=wipeJob.from+(wipeJob.to-wipeJob.from)*k;if(k>=1){const r=wipeJob.r;wipeJob=null;r()}}
